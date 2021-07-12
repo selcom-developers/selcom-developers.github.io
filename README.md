@@ -25,4 +25,4 @@ Create an account now. Start accepting payments on your website or app today.
 
 ## We love Open source
 
-All intergration, libraries and plugins are open source with MIT licence.
+All intergration, libraries and plugins are open source with a permissive licence.
