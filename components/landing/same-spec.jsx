@@ -6,7 +6,7 @@ const clients = [
     name: 'Java',
     href: '/clients/java',
     runtime: 'Java 17 or later',
-    pkg: 'io.github.selcom-developers:selcom4j',
+    pkg: 'com.github.selcom-developers:selcom4j (JitPack)',
     lang: 'java',
     code: `Result<Responses.OrderStatusData> status =
     client.orderStatus(new Requests.OrderStatus("ORD-1001"));

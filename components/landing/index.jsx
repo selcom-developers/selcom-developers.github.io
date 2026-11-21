@@ -12,14 +12,19 @@ const installs = [
   {
     value: 'java',
     label: 'Java',
-    registry: 'Maven Central',
+    registry: 'JitPack',
     runtime: 'Java 17 or later',
     href: '/clients/java',
     lang: 'xml',
-    code: `<dependency>
-  <groupId>io.github.selcom-developers</groupId>
+    code: `<repository>
+  <id>jitpack.io</id>
+  <url>https://jitpack.io</url>
+</repository>
+
+<dependency>
+  <groupId>com.github.selcom-developers</groupId>
   <artifactId>selcom4j</artifactId>
-  <version>0.1.1</version>
+  <version>v0.1.2</version>
 </dependency>`
   },
   { value: 'node', label: 'Node.js', registry: 'npm', runtime: 'Node 20 or later', href: '/clients/node', lang: 'bash', code: 'npm i @selcom-developers/selcom' },
