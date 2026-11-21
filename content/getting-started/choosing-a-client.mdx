@@ -1,0 +1,27 @@
+---
+title: Choosing a client
+description: Which community client fits your project.
+---
+
+# Choosing a client
+
+Every client follows the same [spec](/spec). They sign the same way, read results the same way, and pass the same test vectors. Pick the one that matches your stack.
+
+| If you use | Choose | Package name |
+|---|---|---|
+| Java or a JVM language | [Java](/clients/java) | Maven `io.github.selcom-developers:selcom4j` |
+| Node.js, TypeScript or JavaScript | [Node.js](/clients/node) | npm `@selcom-developers/selcom` |
+| PHP without a framework, or another framework | [PHP](/clients/php) | Packagist `selcom-developers/selcom-php` |
+| Laravel | [Laravel](/clients/laravel) | Packagist `selcom-developers/laravel-selcom` |
+
+Each client page has the install line and a quickstart.
+
+## No client for your language?
+
+You can still use the gateway. The [spec](/spec) is written so that you can build your own client:
+
+1. Implement [request signing](/spec/signing) and check it against the test vectors.
+2. Read [results and retries](/spec/results) before you send any payment.
+3. Follow the [client requirements](/spec/client-requirements).
+
+If you build one, tell us. See [Contributing](/community/contributing).

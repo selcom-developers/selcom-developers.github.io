@@ -1,0 +1,87 @@
+---
+title: PHP client
+description: The community PHP client for the Selcom payment API. PHP 8.2 or later, no framework dependency.
+---
+
+# PHP client
+
+Request signing, checkout, payouts and webhooks for PHP 8.2 or later, with no framework dependency. The HTTP layer is PSR-18.
+
+Repository: [selcom-developers/selcom-php](https://github.com/selcom-developers/selcom-php)
+
+## Install
+
+```bash
+composer require selcom-developers/selcom-php
+```
+
+The default transport builds a Guzzle client for each timeout profile, so the simplest setup also installs Guzzle:
+
+```bash
+composer require guzzlehttp/guzzle
+```
+
+Any other PSR-18 client works too. Its timeouts are then yours to set: see the README's transport section.
+
+## Quickstart
+
+Pay a utility bill from your float account and act on the typed status.
+
+```php
+<?php
+
+use SelcomDevelopers\Selcom\Client;
+use SelcomDevelopers\Selcom\Config;
+use SelcomDevelopers\Selcom\Credentials;
+use SelcomDevelopers\Selcom\Environment;
+use SelcomDevelopers\Selcom\Request\OrderStatusRequest;
+use SelcomDevelopers\Selcom\Request\UtilityPaymentRequest;
+use SelcomDevelopers\Selcom\Status;
+
+$config = new Config(
+    environment: Environment::Sandbox,                  // required: there is no default
+    credentials: new Credentials(
+        apiKey: getenv('SELCOM_API_KEY'),
+        secret: getenv('SELCOM_API_SECRET'),
+        vendor: getenv('SELCOM_VENDOR'),
+        pin: getenv('SELCOM_PIN'),                      // needed by payout operations only
+    ),
+);
+
+$client = new Client($config);                          // default transport: a Guzzle client per timeout profile
+
+// Persist the transid BEFORE you call (see "Idempotency"), then:
+$result = $client->utilityPayment(new UtilityPaymentRequest(
+    transid: 'TXN-UTL-0001',
+    utilityCode: 'LUKU',
+    utilityRef: '01234567891',
+    amount: 8000,                                       // whole TZS
+));
+
+switch ($result->status) {
+    case Status::Success:   /* paid; $result->receipt() may hold a token */ break;
+    case Status::Failed:    /* it did not happen */ break;
+    case Status::Pending:
+    case Status::Ambiguous: /* unknown: query later, never resubmit */ break;
+    case Status::NotFound:  /* only on queries */ break;
+}
+```
+
+The environment is required and has no default. Persist the `transid` before you call, so that an unknown outcome can be settled by querying with the same ID.
+
+The [README](https://github.com/selcom-developers/selcom-php#readme) covers configuration, every operation, error handling, idempotency, webhooks, the transport and signing on its own.
+
+## How it behaves
+
+The client follows the [shared spec](/spec). These pages explain what it does:
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
+
+## Help and issues
+
+Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/selcom-php/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).

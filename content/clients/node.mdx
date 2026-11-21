@@ -1,0 +1,71 @@
+---
+title: Node.js client
+description: The community Node.js and TypeScript client for the Selcom payment API. Node 20 or later.
+---
+
+# Node.js client
+
+Request signing, checkout, payouts and webhooks for TypeScript and JavaScript. Node 20 or later, ESM and CommonJS, with type declarations and no runtime dependencies.
+
+Repository: [selcom-developers/selcom-node](https://github.com/selcom-developers/selcom-node)
+
+## Install
+
+```bash
+npm i @selcom-developers/selcom
+```
+
+## Quickstart
+
+Create an order, then push a USSD prompt to the buyer's mobile wallet.
+
+```ts
+import { SelcomClient } from "@selcom-developers/selcom";
+
+const selcom = new SelcomClient({
+  config: {
+    environment: "sandbox", // required: "sandbox" or "production", there is no default
+    apiKey: process.env.SELCOM_API_KEY!,
+    secret: process.env.SELCOM_API_SECRET!,
+    vendor: process.env.SELCOM_VENDOR!,
+  },
+});
+
+// 1. Create an order (non-card), 2. push a USSD prompt to the buyer's wallet.
+const order = await selcom.createOrderMinimal({
+  orderId: "ORD-1001",
+  buyerEmail: "buyer@example.com",
+  buyerName: "Test Buyer",
+  buyerPhone: "255700000001",
+  amount: 8000, // whole units; fractions are rejected, never rounded
+  currency: "TZS", // always explicit
+  noOfItems: 1,
+  webhookUrl: "https://example.com/selcom/webhook/<random-token>",
+});
+
+const push = await selcom.walletPayment({
+  transid: "TXN-1001",
+  orderId: "ORD-1001",
+  msisdn: "255700000001",
+});
+// push.status is normally "PENDING": the outcome arrives by webhook and is confirmed with orderStatus.
+```
+
+The environment is required and has no default. Every operation returns a result with one of five statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
+
+The [README](https://github.com/selcom-developers/selcom-node#readme) covers configuration, every operation, error handling, idempotency, webhooks, signing on its own and replacing the transport.
+
+## How it behaves
+
+The client follows the [shared spec](/spec). These pages explain what it does:
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
+
+## Help and issues
+
+Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/selcom-node/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).

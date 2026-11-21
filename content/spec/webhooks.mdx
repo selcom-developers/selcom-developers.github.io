@@ -1,0 +1,109 @@
+---
+description: Verifying and handling checkout webhooks.
+---
+
+# Checkout webhooks
+
+When a checkout payment completes, the gateway calls the URL the merchant gave as `webhook` (base64-encoded) on the order. This page is how every client helps the merchant handle that call. `verify_webhook()` in `tools/selcom_reference.py` is the executable version of the verification step, and `vectors/responses/checkout.webhook.json` holds samples.
+
+**The one rule that matters most: a webhook is a hint, not proof.** Never fulfil an order because a webhook said so. Confirm with `checkout.order-status` first, every time.
+
+## What arrives
+
+A POST with a JSON body. The documented fields:
+
+| Field | Content |
+|---|---|
+| `order_id` | The merchant's order ID |
+| `transid` | The payment attempt's ID |
+| `reference` | The gateway's reference for the payment |
+| `result`, `resultcode` | As in API responses |
+| `payment_status` | For example `COMPLETED` |
+| `channel` | The payment channel, for example a wallet name |
+| `amount` | The amount paid, as a string. It may contain thousands separators (`"10,000"`) |
+| `phone` | The payer's number |
+
+Other fields (`msisdn`, `operator`, `message`) may appear. Ignore fields you do not know; do not fail on them.
+
+Selcom's documentation shows the webhook carrying the same signing headers as API requests (`Authorization`, `Digest-Method`, `Digest`, `Timestamp`, `Signed-Fields`), with `Signed-Fields` naming `transid,order_id,reference,result,resultcode,payment_status`. Note that `amount` is not in that list. The docs also say webhooks are sent only for successful payments; handle failure deliveries anyway.
+
+## Handling, step by step
+
+1. **Read the raw body** before any framework parses or rewrites it.
+2. **Verify** it (below). Reject `INVALID` and `STALE`.
+3. **Deduplicate** on `(order_id, transid)`. A delivery already stored is acknowledged and not processed again.
+4. **Store** the delivery: the raw body with personal data redacted, the headers minus `Authorization` and `Digest`, the verification verdict and the time received.
+5. **Acknowledge** with HTTP 200.
+6. **Confirm**, after acknowledging (in a queue or background job): call `checkout.order-status` for the `order_id` and act only on what it returns. Take the amount from there too, and check it against the order.
+7. **Apply** the confirmed status through the final-state guard (below), then fulfil.
+
+## Verification
+
+Clients ship `verify(headers, rawBody) -> Verdict`, configured with the secret, a clock and a replay store.
+
+1. If there is no `Digest` header: **`UNSIGNED`**. Confirm it with order-status, as for every delivery.
+2. If `Digest` is present but empty, or `Digest-Method` is not a method the client is configured for: **`INVALID`**.
+3. If `Timestamp` does not match the format in [Request signing](/spec/signing#timestamp), or the body is not a JSON object, or `Signed-Fields` is empty: **`INVALID`**.
+4. If `Signed-Fields` does not include both `order_id` and `transid`: **`INVALID`**. Selcom's documented list (`transid,order_id,reference,result,resultcode,payment_status`) does.
+5. For each name in `Signed-Fields`, in order, take the value from the body (a dotted name may also be found by walking nested objects). If any is missing: **`INVALID`**. Normalise the values exactly as for requests. This step must not throw: a number that is not a whole number within ±(2^53 − 1) (including huge exponents such as `1e100000000` and tiny ones such as `1e-999999999`) is **`INVALID`**, decided without expanding the number.
+6. If any signed name, or the text of any signed value, contains `&`: **`INVALID`**.
+7. Build the signing string from the received `Timestamp` and those values, compute the digest, and compare it with `Digest` **in constant time** (`hash_equals`, `MessageDigest.isEqual`, `crypto.timingSafeEqual`). If they differ: **`INVALID`**.
+8. If the timestamp is further than the window (default 300 seconds, configurable) from the current time, in either direction: **`STALE`**.
+9. If the replay store has seen this digest within the window: **`REPLAY`**. Otherwise record it, and keep it until max(now, `Timestamp`) + window.
+10. **`VALID`**.
+
+| Verdict | Respond | Process? |
+|---|---|---|
+| `VALID` | 200 | Yes, then confirm with order-status |
+| `UNSIGNED` | 200 | Yes, then confirm with order-status |
+| `REPLAY` | 200 | No: it has been handled |
+| `INVALID` | 401 | No. Log it, redacted |
+| `STALE` | 401 | No. Log it, redacted |
+
+`VALID` covers only the fields named in `Signed-Fields`. Take the amount, and every other fact you act on, from order-status.
+
+The replay store needs to hold digests only for the length of the window. A cache with a time-to-live is enough; the deduplication in step 3 of the handling is the durable guard.
+
+## Idempotency
+
+Selcom may deliver the same webhook more than once, and the merchant may also learn the outcome by polling. Every path that applies a result goes through one function keyed on `(order_id, transid)`, backed by a unique constraint in the merchant's store, so that a second delivery is a no-op.
+
+## Final-state guard
+
+`SUCCESS` and a cancel-confirmed `FAILED` are final. Once an order is final:
+
+- a later delivery or poll result for it never changes it;
+- a conflicting result (a `FAILED` after a `SUCCESS`, for instance) is ignored and flagged for a person to reconcile;
+- `PENDING` never overwrites anything.
+
+Apply results with a compare-and-set (`UPDATE … WHERE status NOT IN (final states)`) or under a row lock, so that a webhook and a poll arriving together cannot both win.
+
+An order-status poll can move an order forward to `SUCCESS` at any time. Seeing `FAILED` while the order can still be paid is not enough to close it: cancel the order first, and close it only if the cancel succeeds (see [Results and retries](/spec/results#order-status)).
+
+## Acknowledgement
+
+- Return 200 as soon as the delivery is stored. Do the order-status call and the fulfilment afterwards, outside the request.
+- Return a 5xx only when storing failed, so that the gateway tries again.
+- Never return an error because order-status was slow or fulfilment failed; that is the merchant's problem to retry, not the gateway's.
+- Keep the handler fast; the gateway's timeout for webhook calls is not documented.
+
+## Polling as the fallback
+
+Webhooks can be lost. A merchant waiting on an order that has no final status SHOULD poll `checkout.order-status` on the schedule in [Results and retries](/spec/results#idempotency-and-retries) (first after 3 minutes, then every 3 minutes, for a bounded window), until the order is final or expires.
+
+## Registering the URL
+
+- Send the webhook URL on every order as `webhook`, base64-encoded (the base64 text is what is signed).
+- Use HTTPS.
+- Put an unguessable token in the path, for example `/selcom/webhook/<random>`. It does not replace order-status confirmation.
+
+## Samples
+
+`vectors/responses/checkout.webhook.json` holds deliveries signed with the sample secret from Selcom's documentation. Run them in order, through one replay store, with the clock fixed at `verification.now`. Each sample gives the expected verdict and the amount in whole shillings, for example 10000 from `"10,000"`.
+
+## Open questions
+
+- **Which key signs webhooks.** The documentation shows the signing headers on webhook calls but does not say whose secret produces the `Digest`. The samples assume the merchant's API secret. Until this is confirmed in the sandbox, clients SHOULD let the merchant run verification in a report-only mode (log the verdict, never reject) to find out, and SHOULD default to rejecting `INVALID`.
+- **Nested billing.** It is not confirmed whether the gateway accepts `billing` as a nested object in a create-order body. This spec avoids the question by always sending dotted keys flat, which is what the signature describes. It is also not known whether a webhook body can carry nested objects; verification looks up dotted names both flat and nested so that either works.
+- **Retry policy.** How often and for how long the gateway retries a delivery that did not get a 200 is not documented.
+- **Failure deliveries.** The documentation says webhooks come only for successful payments. Whether that holds for every channel is unconfirmed.

@@ -1,0 +1,86 @@
+---
+title: Java client
+description: The community Java client for the Selcom payment API. Java 17 or later.
+---
+
+# Java client
+
+Request signing, a replaceable transport, typed checkout and payout operations, result classification, webhook verification and log redaction. Java 17 or later, with one runtime dependency: Jackson databind.
+
+Repository: [selcom-developers/selcom4j](https://github.com/selcom-developers/selcom4j)
+
+## Install
+
+Maven:
+
+```xml
+<dependency>
+  <groupId>io.github.selcom-developers</groupId>
+  <artifactId>selcom4j</artifactId>
+  <version>0.1.1</version>
+</dependency>
+```
+
+Gradle (Kotlin DSL):
+
+```kotlin
+implementation("io.github.selcom-developers:selcom4j:0.1.1")
+```
+
+## Quickstart
+
+Create an order, send the buyer to the hosted payment page, and confirm the result with order status.
+
+```java
+import io.github.selcomdevelopers.selcom.*;
+import io.github.selcomdevelopers.selcom.api.*;
+import io.github.selcomdevelopers.selcom.result.*;
+
+SelcomConfig config = SelcomConfig.builder()
+        .environment(Environment.SANDBOX)            // required, no default
+        .credentials(System.getenv("SELCOM_API_KEY"), System.getenv("SELCOM_API_SECRET"))
+        .vendor(System.getenv("SELCOM_VENDOR"))
+        .pin(System.getenv("SELCOM_PIN"))            // only needed for payouts
+        .build();
+
+SelcomClient client = SelcomClient.create(config);
+
+// 1. Create an order and send the buyer to the hosted page.
+Result<Responses.OrderCreated> order = client.createOrder(CreateOrderRequest.builder()
+        .orderId("ORD-1001")
+        .buyerEmail("test.buyer@example.com")
+        .buyerName("Test Buyer")
+        .buyerPhone("255700000001")
+        .amount(Money.tzs(8000))
+        .paymentMethods(PaymentMethod.ALL)
+        .webhookUrl("https://shop.example.com/selcom/webhook/9f1c2e")   // plain URL; base64-encoded for you
+        .billing(new Address("Test", "Buyer", "1 Test Street", null, "Dar es Salaam", "Dar es Salaam", "11101", "TZ", "255700000001"))
+        .noOfItems(1)
+        .build());
+
+if (order.status() == Status.SUCCESS) {
+    String payUrl = order.first().orElseThrow().paymentGatewayUrl();   // decoded for you; the raw base64 is kept too
+}
+
+// 2. Later, confirm. Order status is the source of truth, never a webhook.
+Result<Responses.OrderStatusData> status = client.orderStatus(new Requests.OrderStatus("ORD-1001"));
+```
+
+The environment is required and has no default. Every method returns a `Result` with one of five statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
+
+The [README](https://github.com/selcom-developers/selcom4j#readme) covers configuration, every operation, error handling, idempotency, webhooks and using each layer on its own.
+
+## How it behaves
+
+The client follows the [shared spec](/spec). These pages explain what it does:
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
+
+## Help and issues
+
+Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/selcom4j/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).

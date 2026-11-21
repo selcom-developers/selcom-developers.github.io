@@ -1,0 +1,38 @@
+---
+title: Spec
+description: The shared rules and test vectors that every community Selcom client follows.
+---
+
+# Spec
+
+The spec is the shared source of truth for every client: the rules, worked examples and test vectors. This section presents it.
+
+If a client and the spec disagree, the client is wrong, or the spec needs a fix that every client then picks up.
+
+<Callout title="Not official">
+The spec is not affiliated with, endorsed by or supported by Selcom Paytech Ltd. Where it and [Selcom's developer portal](https://developers.selcommobile.com/) disagree about the API itself, the portal wins.
+</Callout>
+
+## Pages
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">The exact signing algorithm, with worked examples and pitfalls.</LinkCard>
+  <LinkCard href="/spec/api-v1" title="API v1 operations">Checkout and payouts: 16 operations plus the webhook.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">Result codes, the five typed statuses, idempotency.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verifying and handling checkout webhooks.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client must do.</LinkCard>
+</LinkCards>
+
+## Test vectors
+
+The spec ships test vectors that every client must pass:
+
+- `vectors/signing.json`: 20 signing cases and 11 rejects.
+- `vectors/responses/`: 120 response scenarios across the 16 operations, and 15 webhook samples.
+- `tools/`: the Python reference implementation that generates them.
+
+All credentials in the vectors are sample values or made up. None of them works against the gateway.
+
+## Source
+
+The rules, vectors and reference implementation live in one repository: [Spec repository on GitHub](https://github.com/selcom-developers/selcom-spec). Changes to the rules start there.

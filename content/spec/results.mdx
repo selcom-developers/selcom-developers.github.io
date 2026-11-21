@@ -1,0 +1,120 @@
+---
+description: Result codes, typed statuses, idempotency and retries.
+---
+
+# Results, statuses and retries
+
+Every client turns a gateway response into one of five typed statuses. Getting this wrong costs real money: reading "in progress" or "unknown" as "failed", then trying again under a new ID, pays the same person twice. This page is the rule; `classify()` in `tools/selcom_reference.py` is the executable version, and `vectors/responses/` holds the cases.
+
+## Result codes
+
+The gateway puts its verdict in `resultcode`, a string in the response body.
+
+| `resultcode` | Meaning |
+|---|---|
+| `000` | Success |
+| `111`, `927` | In progress: the request was accepted and is still being processed |
+| `999` | Ambiguous: the outcome is not known yet and will be settled by reconciliation |
+| `404` on a status query | No record of that `transid` or `order_id` |
+| anything else | Failed |
+
+Classify by `resultcode` only. The `result` text (`SUCCESS`, `FAIL`, `PENDING`, sometimes empty) and the `message` are for people. A `000` with an empty `result` is a success; a `111` whose `result` says `SUCCESS` is still in progress.
+
+Normalise before comparing: trim the string; if the gateway sends a JSON number, format it as three digits (`0` becomes `000`).
+
+The HTTP status does not decide the verdict: business errors come back in the body, sometimes with a non-2xx status. Clients expose the HTTP status alongside the typed status.
+
+## Typed statuses
+
+| Status | Meaning | Final? | What the caller may do |
+|---|---|---|---|
+| `SUCCESS` | It happened | yes | Fulfil, after confirming (see [Webhooks](/spec/webhooks)) |
+| `PENDING` | Accepted, still processing | no | Wait for the webhook, or query after 3 minutes or more |
+| `AMBIGUOUS` | Nobody knows yet | no | Query after 3 minutes or more. Never resubmit |
+| `FAILED` | It did not happen | yes | Report the failure. A new attempt is a new transaction with a new ID, and it is the caller's decision, never the client's |
+| `NOT_FOUND` | The gateway has no record of the ID | yes, for that query | The only case in which the same ID may be submitted again |
+
+Every client returns these five names, spelled exactly like this, from every operation.
+
+## Classification
+
+Inputs: the operation's kind ([API v1 operations](/spec/api-v1#operation-kinds)) and the response body. Apply the first rule that matches.
+
+1. **No verdict.** The body is not a JSON object, or has no usable `resultcode` (an HTML error page from a proxy, an empty body, a truncated response).
+   - `payment`, `status-query`, `order-status`: **`AMBIGUOUS`**. Something answered, but not with a verdict, so the money may have moved.
+   - `other`: raise an invalid-response error carrying the HTTP status and raw body.
+2. `000`: **`SUCCESS`**. For `order-status`, go to [Order status](#order-status) instead.
+3. `111` or `927`: **`PENDING`**.
+4. `999`: **`AMBIGUOUS`**.
+5. `404`, and the kind is `status-query` or `order-status`: **`NOT_FOUND`**.
+6. Anything else:
+   - `order-status`: **`AMBIGUOUS`**. The query failed, which says nothing about the order.
+   - every other kind: **`FAILED`**.
+
+A `404` from an operation that is not a status query (a lookup, a create, a cancel) is an ordinary failure, not `NOT_FOUND`.
+
+No response at all (a timeout, a reset connection) is not classified here. It is a transport error, raised as described in [Client requirements](/spec/client-requirements#transport-errors). For money-moving operations the caller treats an unknown-outcome error exactly like `AMBIGUOUS`.
+
+## Order status
+
+For `checkout.order-status`, the top-level `resultcode` only says whether the query worked. The verdict on the order is `data[0].payment_status`:
+
+| `payment_status` | Status |
+|---|---|
+| `COMPLETED` (also accept `COMPLETE`) | `SUCCESS` |
+| `PENDING`, `INPROGRESS` | `PENDING` |
+| `CANCELLED`, `CANCELED`, `CANCEL`, `USERCANCELLED`, `USERCANCELED`, `REJECTED`, `FAILED` | `FAILED` |
+| anything else, or missing | `AMBIGUOUS` |
+
+Compare case-insensitively after trimming. Several spellings appear across Selcom's pages; the list above accepts all of them.
+
+If the query succeeded (`000`) but `data` is an empty array, the order does not exist: `NOT_FOUND`. If `data` is missing or not an array, `AMBIGUOUS`.
+
+A `FAILED` here describes the latest attempt. An order that has not expired can still be paid by a later attempt (the buyer retries the USSD prompt, or pays on the hosted page). To close an order as failed for good, cancel it with `checkout.cancel-order`: a completed order cannot be cancelled, so a successful cancel proves it was never paid.
+
+## Idempotency and retries
+
+**The ID is the idempotency key.** `transid` identifies a payout or a payment attempt; `order_id` identifies a checkout order. The gateway refuses a second transaction with an ID it has seen.
+
+**Never retry a money-moving POST automatically.** Clients do not retry `payment` operations, not even after a timeout, and not with the same ID either. A timeout on a payment means "unknown", and the only safe way to learn the answer is to ask.
+
+**Settle `PENDING` and `AMBIGUOUS` by querying:**
+
+1. Wait at least 3 minutes after the original request.
+2. Query with the same ID: `utilitypayment.query` or `walletcashin.query` by `transid`; `checkout.order-status` by `order_id` for checkout payments.
+3. If the status is still `PENDING` or `AMBIGUOUS`, query again every 3 minutes for a bounded window that the caller chooses.
+4. If it never settles, stop and hand the transaction to a person, who raises it with Selcom support with the `transid` and `reference`.
+
+**Never mint a new ID while an outcome is unknown.** A new `transid` is a new transaction. Use one only after the old one is `FAILED`.
+
+**Resubmit the same ID only after `NOT_FOUND`.** If the status query says the gateway never recorded the `transid`, the original request did not arrive, and sending it again with the same `transid` is safe: if it did arrive in the meantime, the gateway refuses the duplicate.
+
+**Not-sent transport errors** (the request provably never left: DNS failure, connection refused) are safe to repeat with the same ID. For read-only operations the client may repeat them itself, if the caller opted in. For payments and writes the client raises the error and the caller decides whether to send again with the same ID. See [Client requirements](/spec/client-requirements#transport-errors).
+
+**Generate IDs deterministically** from the merchant's own records (for example the payout row's primary key with a prefix), so that a crash and restart produces the same ID rather than a new one. Persist the ID before sending the request.
+
+## The result object
+
+Every operation returns, at least:
+
+| Field | Content |
+|---|---|
+| `status` | One of the five typed statuses |
+| `resultcode` | The normalised code, or none when there was no verdict |
+| `result`, `message` | The gateway's text, unchanged |
+| `reference` | The gateway's reference, when present |
+| `transid` / `order_id` | The ID this result is about |
+| `http_status` | The HTTP status code |
+| `data` | The decoded `data` array (with base64 URLs decoded where the operation defines them, raw values kept) |
+| `raw` | The raw response body, for audit; redact before logging |
+
+Clients also expose `is_final()` (true for `SUCCESS`, `FAILED` and `NOT_FOUND`).
+
+## Fixtures
+
+`vectors/responses/<operation>.json` holds, for each v1 operation, a success, an in-progress `111`, an ambiguous `999`, a failure, a `404`, and a response with no verdict. Each scenario gives the HTTP status, the body (or `raw_body` for non-JSON), and `expected_status` or `expected_error`. Codes and messages other than `000`, `111`, `927`, `999` and `404` are made up; the rule above, not the particular code, is what is tested.
+
+## Open questions
+
+- Selcom does not publish the codes for requests rejected before processing (bad signature, unknown key). Under rule 6 they classify as `FAILED` on a payout status query, which would be wrong if the query itself was rejected. Until the codes are known, a caller should not pay again on the strength of a single `FAILED` from a status query without looking at its `resultcode` and `message`.
+- Whether `927` ever appears on checkout operations is not documented. Clients treat it as in progress everywhere.

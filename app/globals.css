@@ -1,0 +1,370 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Nextra toggles dark mode with a class on <html>. */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Identity tokens.
+ * Brand red: the ink of a hand-pressed payment stamp. Warm greys and a warm
+ * near-black carry the page; brass is the one secondary accent.
+ * The five status colours come from the spec's typed statuses. FAILED uses
+ * rose, not the brand red, so an error never looks like a link or a button.
+ * Text pairs meet WCAG AA in both themes.
+ */
+:root {
+  --paper: #fbfaf9;
+  --ink: #1f1a19;
+  --ink-soft: #5e5654;
+  --rule: #e8e3e1;
+  --wash: #f5f2f0;
+  --brand: #b8252a;
+  --brand-strong: #932026;
+  --brand-soft: #fbeceb;
+  --brass: #8c5a0b;
+  --brass-soft: #fbf3e2;
+  --on-brand: #ffffff;
+
+  --st-success: #17784a;
+  --st-pending: #2f5ba8;
+  --st-ambiguous: #9a5b00;
+  --st-failed: #a3195b;
+  --st-not-found: #6b6260;
+
+  --code-bg: #f7f4f2;
+  --code-head: #efebe8;
+
+  /* shadcn/ui roles */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --secondary: var(--wash);
+  --secondary-foreground: var(--ink);
+  --muted: var(--wash);
+  --muted-foreground: var(--ink-soft);
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--ink);
+  --destructive: var(--st-failed);
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--brand);
+  --radius: 0.625rem;
+
+  /* Nextra reads these for its own typography. */
+  --x-font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --x-font-mono: var(--font-code), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.dark {
+  --paper: #141111;
+  --ink: #f3eeec;
+  --ink-soft: #b5aca9;
+  --rule: #302a29;
+  --wash: #1e1a19;
+  --brand: #f2817b;
+  --brand-strong: #f8aaa5;
+  --brand-soft: #34201f;
+  --brass: #e6b866;
+  --brass-soft: #2b2214;
+  --on-brand: #1f1a19;
+
+  --st-success: #5bd39a;
+  --st-pending: #8fb0ff;
+  --st-ambiguous: #f0b054;
+  --st-failed: #f07ab5;
+  --st-not-found: #b5aca9;
+
+  --code-bg: #1a1615;
+  --code-head: #221d1c;
+
+  --card: #1a1615;
+  --popover: #1a1615;
+}
+
+@theme inline {
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font-heading: var(--font-sans);
+
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-rule: var(--rule);
+  --color-wash: var(--wash);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  --color-code: var(--code-bg);
+  --color-st-success: var(--st-success);
+  --color-st-pending: var(--st-pending);
+  --color-st-ambiguous: var(--st-ambiguous);
+  --color-st-failed: var(--st-failed);
+  --color-st-not-found: var(--st-not-found);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --animate-stamp: stamp-press 520ms cubic-bezier(0.2, 0.9, 0.25, 1.15) 900ms both;
+
+  @keyframes stamp-press {
+    0% {
+      opacity: 0;
+      transform: rotate(-14deg) scale(1.35);
+    }
+    60% {
+      opacity: 0.95;
+      transform: rotate(-11deg) scale(0.97);
+    }
+    100% {
+      opacity: 0.9;
+      transform: rotate(-12deg) scale(1);
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "kern" 1;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Global: focus, selection, motion                                    */
+/* (unlayered on purpose: it must win over Nextra's layered styles)    */
+/* ------------------------------------------------------------------ */
+
+:focus-visible,
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--brand) 22%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Nextra docs theme                                                   */
+/* ------------------------------------------------------------------ */
+
+html {
+  font-family: var(--x-font-sans);
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--x-font-mono);
+}
+
+/* Navbar */
+.nextra-navbar-blur {
+  background-color: color-mix(in oklab, var(--paper) 82%, transparent);
+  border-color: var(--rule);
+}
+
+/* Headings in docs pages */
+main h1,
+main h2,
+main h3,
+main h4 {
+  color: var(--ink);
+  letter-spacing: -0.015em;
+}
+
+main h1 {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+main h2 {
+  font-weight: 700;
+  border-color: var(--rule);
+}
+
+main h3,
+main h4 {
+  font-weight: 700;
+}
+
+main p,
+main li {
+  line-height: 1.7;
+}
+
+/* Links in prose */
+main :where(p, li, td) > a:not([class*="sd-"]),
+main :where(p, li, td) > strong > a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in oklab, var(--brand) 45%, transparent);
+}
+
+main :where(p, li, td) > a:not([class*="sd-"]):hover {
+  text-decoration-color: currentColor;
+}
+
+/* Inline code */
+main :not(pre) > code {
+  background: var(--wash);
+  border-color: var(--rule);
+  color: var(--ink);
+}
+
+/* Code blocks */
+main pre {
+  background-color: var(--code-bg);
+  border-color: var(--rule);
+  --tw-ring-color: var(--rule);
+}
+
+main pre + div,
+main div:has(> pre) > div:first-child:not(:has(pre)) {
+  border-color: var(--rule);
+}
+
+main div:has(> pre) {
+  border-color: var(--rule);
+}
+
+/* Code block title bar (filename) */
+main div:has(+ pre[data-filename]),
+main pre[data-filename] ~ div {
+  background-color: var(--code-head);
+}
+
+/* Tables */
+main table {
+  font-size: 0.95em;
+}
+
+main table th {
+  background-color: var(--wash);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+main table :is(th, td) {
+  border-color: var(--rule);
+}
+
+main table tr {
+  border-color: var(--rule);
+}
+
+main table tr:nth-child(even) {
+  background-color: color-mix(in oklab, var(--wash) 55%, transparent);
+}
+
+/* Blockquotes (spec notes) */
+main blockquote {
+  font-style: normal;
+  color: var(--ink-soft);
+  border-color: var(--brand);
+}
+
+/* Steps (Getting started) */
+.nextra-steps {
+  border-color: var(--rule);
+}
+
+.nextra-steps h3::before {
+  background-color: var(--brand-soft) !important;
+  color: var(--brand-strong) !important;
+  border-color: var(--paper) !important;
+  font-weight: 700 !important;
+}
+
+/* Sidebar and table of contents */
+.nextra-sidebar a[aria-current="page"],
+.nextra-sidebar li.active > a {
+  font-weight: 700;
+}
+
+.nextra-toc a {
+  text-underline-offset: 3px;
+}
+
+/* Footer: the site supplies its own layout */
+div:has(> footer) {
+  background-color: var(--wash);
+}
+
+div:has(> footer) > hr {
+  border-color: var(--rule);
+}
+
+/* ------------------------------------------------------------------ */
+/* Shiki tokens for components that highlight code themselves          */
+/* ------------------------------------------------------------------ */
+
+.sd-code pre {
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sd-code span {
+  color: var(--shiki-light);
+}
+
+.dark .sd-code span {
+  color: var(--shiki-dark);
+}
