@@ -47,7 +47,7 @@ function SignedRequest() {
           </p>
         </div>
       </div>
-      <Stamp className="absolute -right-2 -bottom-10 size-24 sm:-right-7 sm:-bottom-12 sm:size-32" />
+      <Stamp className="absolute right-2 -bottom-10 size-24 sm:-right-7 sm:-bottom-12 sm:size-32" />
       </div>
       <figcaption className="mt-5 max-w-md pr-24 text-sm leading-relaxed text-ink-soft sm:pr-28">
         The signing string and its digest, from the spec&apos;s first worked example with the sample

@@ -36,7 +36,11 @@ const installs = [
 ]
 
 // From the Node.js client's README: the signer on its own, with any HTTP client.
-const signSample = `import { formatTimestamp, hs256Signer, signRequest } from "@selcom-developers/selcom";
+const signSample = `import {
+  formatTimestamp,
+  hs256Signer,
+  signRequest,
+} from "@selcom-developers/selcom";
 
 const signed = signRequest({
   method: "POST",
@@ -51,8 +55,8 @@ const signed = signRequest({
   signer: hs256Signer(process.env.SELCOM_API_SECRET),
 });
 
-signed.headers; // the five signing headers, plus Accept and Content-Type
-signed.body;    // flat JSON: {"vendor":"TILL123",...,"billing.firstname":"John"}`
+signed.headers; // Authorization, Digest, Timestamp, Signed-Fields, ...
+signed.body;    // flat JSON with "billing.firstname"`
 
 function Section({ id, title, lead, children }) {
   return (
