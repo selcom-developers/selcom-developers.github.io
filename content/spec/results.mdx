@@ -116,5 +116,5 @@ Clients also expose `is_final()` (true for `SUCCESS`, `FAILED` and `NOT_FOUND`).
 
 ## Open questions
 
-- Selcom does not publish the codes for requests rejected before processing (for example a bad signature or an unknown key). Under rule 6 they classify as `FAILED` on a payout status query, which would be wrong if the query itself was rejected. Until the codes are known, a caller should not pay again on the strength of a single `FAILED` from a status query without looking at its `resultcode` and `message`.
+- Selcom does not publish the codes for requests rejected before processing (bad signature, unknown key). Under rule 6 they classify as `FAILED` on a payout status query, which would be wrong if the query itself was rejected. Until the codes are known, a caller should not pay again on the strength of a single `FAILED` from a status query without looking at its `resultcode` and `message`.
 - Whether `927` ever appears on checkout operations is not documented. Clients treat it as in progress everywhere.

@@ -21,12 +21,6 @@ The Java, Node/TypeScript, PHP and Laravel clients differ in idiom, not in behav
 - A missing secret, key or vendor fails at construction time, not on the first request. The secret and PIN MUST NOT appear in `toString()`, `__debugInfo()`, `inspect()` or exception messages.
 - The Laravel package reads its settings from the environment through a published config file and follows the same rules: no default environment.
 
-The text for client READMEs:
-
-- Before your first call, send Selcom the public outbound (egress) IP address of every server that will call the API, for each environment you use.
-- Hosts without a fixed outbound address (serverless functions, autoscaling containers, many platform defaults, home or office connections) need a static egress IP, for example through a NAT gateway or a proxy.
-- When servers or hosting change, ask Selcom to update the list before you move traffic.
-
 ## Timeouts
 
 - Timeouts MUST be configurable, per timeout profile.

@@ -24,7 +24,7 @@ Search only works after `npm run build`, because the index is built from the exp
 | Path | What it is |
 |---|---|
 | `content/` | The pages, as MDX. Folders and `_meta.js` files set the sidebar and navigation |
-| `content/spec/` | Ported from [selcom-spec](https://github.com/selcom-developers/selcom-spec) at tag `v0.2.2` |
+| `content/spec/` | Ported from [selcom-spec](https://github.com/selcom-developers/selcom-spec) |
 | `content/clients/` | One page per client |
 | `app/` | Next.js layout and page routing |
 | `.github/workflows/pages.yml` | Build on every pull request, deploy on push to `main` |
@@ -34,7 +34,7 @@ Search only works after `npm run build`, because the index is built from the exp
 - Use plain, clear English and short sentences.
 - Do not invent API details for the clients. Describe only what is published.
 - Use made-up data only: phones like `255700000001`, IDs like `ORD-1001`, keys like `test-key-0001`.
-- The `content/spec/` pages are the spec at tag `v0.2.2`, presented on the site without per-page links to the source files. The spec overview and the footer link the spec repository. When the spec changes, update the pages and the version together.
+- The `content/spec/` pages present the spec on the site, without per-page links to the source files. The spec overview and the footer link the spec repository. When the spec changes, update the pages and the version together.
 - In MDX, escape `{` and `<` in normal text, or put them in code.
 
 ## Deployment
