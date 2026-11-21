@@ -1,51 +1,84 @@
 ---
 title: PHP client
-description: The community PHP client for the Selcom API gateway. v1 in development, not yet published.
+description: The community PHP client for the Selcom payment API. PHP 8.2 or later, no framework dependency.
 ---
 
 # PHP client
 
-> **Status: v1 in development, not yet published.** Not affiliated with Selcom Paytech Ltd.
-
-The PHP client is one of four community clients for the Selcom API gateway. Language: PHP. It does not depend on any framework.
+Request signing, checkout, payouts and webhooks for PHP 8.2 or later, with no framework dependency. The HTTP layer is PSR-18.
 
 Repository: [selcom-developers/selcom-php](https://github.com/selcom-developers/selcom-php)
 
 ## Install
 
-**Available after the first release.** The package is not published yet, so this line does not work today.
-
 ```bash
 composer require selcom-developers/selcom-php
 ```
 
-Registry: Packagist. Package: `selcom-developers/selcom-php`.
+The default transport builds a Guzzle client for each timeout profile, so install Guzzle too, or pass your own PSR-18 client or transport:
 
-## What it follows
+```bash
+composer require guzzlehttp/guzzle
+```
 
-The client is written to the [shared spec](/spec). Read these pages to understand how it behaves:
+## Quickstart
 
-- [Request signing](/spec/signing)
-- [API v1 operations](/spec/api-v1)
-- [Results and retries](/spec/results)
-- [Webhooks](/spec/webhooks)
-- [Client requirements](/spec/client-requirements)
+Pay a utility bill from your float account and act on the typed status.
 
-In short, a client that follows the spec:
+```php
+<?php
 
-- needs an explicit environment (`sandbox` or `production`), with no default;
-- signs every request, and fails closed if signing fails;
-- never retries a payment or a write on its own;
-- returns one of five typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`;
-- verifies webhooks and treats them as hints, not proof.
+use SelcomDevelopers\Selcom\Client;
+use SelcomDevelopers\Selcom\Config;
+use SelcomDevelopers\Selcom\Credentials;
+use SelcomDevelopers\Selcom\Environment;
+use SelcomDevelopers\Selcom\Request\OrderStatusRequest;
+use SelcomDevelopers\Selcom\Request\UtilityPaymentRequest;
+use SelcomDevelopers\Selcom\Status;
 
-## Usage and API details
+$config = new Config(
+    environment: Environment::Sandbox,                  // required: there is no default
+    credentials: new Credentials(
+        apiKey: getenv('SELCOM_API_KEY'),
+        secret: getenv('SELCOM_API_SECRET'),
+        vendor: getenv('SELCOM_VENDOR'),
+        pin: getenv('SELCOM_PIN'),                      // needed by payout operations only
+    ),
+);
 
-This page does not show code samples yet. The API is still in development and may change before the first release. When the client is published, the README in the [repository](https://github.com/selcom-developers/selcom-php) is the place for install, quickstart and per-operation guidance.
+$client = new Client($config);                          // PSR-18 client found by discovery
 
-## Before you start
+// Persist the transid BEFORE you call (see "Idempotency"), then:
+$result = $client->utilityPayment(new UtilityPaymentRequest(
+    transid: 'TXN-UTL-0001',
+    utilityCode: 'LUKU',
+    utilityRef: '01234567891',
+    amount: 8000,                                       // whole TZS
+));
 
-You need credentials from Selcom. See [Credentials and environments](/getting-started).
+switch ($result->status) {
+    case Status::Success:   /* paid; $result->receipt() may hold a token */ break;
+    case Status::Failed:    /* it did not happen */ break;
+    case Status::Pending:
+    case Status::Ambiguous: /* unknown: query later, never resubmit */ break;
+    case Status::NotFound:  /* only on queries */ break;
+}
+```
+
+The environment is required and has no default. Persist the `transid` before you call, so that an unknown outcome can be settled by querying with the same ID.
+
+The [README](https://github.com/selcom-developers/selcom-php#readme) covers configuration, every operation, error handling, idempotency, webhooks, the transport and signing on its own.
+
+## How it behaves
+
+The client follows the [shared spec](/spec). These pages explain what it does and why:
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
 
 ## Help and issues
 

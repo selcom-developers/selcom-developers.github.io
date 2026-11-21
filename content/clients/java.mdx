@@ -1,55 +1,79 @@
 ---
 title: Java client
-description: The community Java client for the Selcom API gateway. v1 in development, not yet published.
+description: The community Java client for the Selcom payment API. Java 17 or later.
 ---
 
 # Java client
 
-> **Status: v1 in development, not yet published.** Not affiliated with Selcom Paytech Ltd.
-
-The Java client is one of four community clients for the Selcom API gateway. Language: Java.
+Request signing, a replaceable transport, typed checkout and payout operations, result classification, webhook verification and log redaction. Java 17 or later, with one runtime dependency: Jackson databind.
 
 Repository: [selcom-developers/selcom-java](https://github.com/selcom-developers/selcom-java)
 
 ## Install
 
-**Available after the first release.** The package is not published yet, so this line does not work today.
+Add the dependency from Maven Central:
 
-```text
+```xml
 <dependency>
   <groupId>io.github.selcom-developers</groupId>
   <artifactId>selcom-client</artifactId>
-  <version>VERSION</version>
+  <version>0.1.0</version>
 </dependency>
 ```
 
-Registry: Maven Central. Package: `io.github.selcom-developers:selcom-client`. Replace `VERSION` with the released version.
+## Quickstart
 
-## What it follows
+Create an order, send the buyer to the hosted payment page, and confirm the result with order status.
 
-The client is written to the [shared spec](/spec). Read these pages to understand how it behaves:
+```java
+import io.github.selcomdevelopers.selcom.*;
+import io.github.selcomdevelopers.selcom.api.*;
+import io.github.selcomdevelopers.selcom.result.*;
 
-- [Request signing](/spec/signing)
-- [API v1 operations](/spec/api-v1)
-- [Results and retries](/spec/results)
-- [Webhooks](/spec/webhooks)
-- [Client requirements](/spec/client-requirements)
+SelcomConfig config = SelcomConfig.builder()
+        .environment(Environment.SANDBOX)            // required, no default
+        .credentials(System.getenv("SELCOM_API_KEY"), System.getenv("SELCOM_API_SECRET"))
+        .vendor(System.getenv("SELCOM_VENDOR"))
+        .pin(System.getenv("SELCOM_PIN"))            // only needed for payouts
+        .build();
 
-In short, a client that follows the spec:
+SelcomClient client = SelcomClient.create(config);
 
-- needs an explicit environment (`sandbox` or `production`), with no default;
-- signs every request, and fails closed if signing fails;
-- never retries a payment or a write on its own;
-- returns one of five typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`;
-- verifies webhooks and treats them as hints, not proof.
+// 1. Create an order and send the buyer to the hosted page.
+Result<Responses.OrderCreated> order = client.createOrder(CreateOrderRequest.builder()
+        .orderId("ORD-1001")
+        .buyerEmail("test.buyer@example.com")
+        .buyerName("Test Buyer")
+        .buyerPhone("255700000001")
+        .amount(Money.tzs(8000))
+        .paymentMethods(PaymentMethod.ALL)
+        .webhookUrl("https://shop.example.com/selcom/webhook/9f1c2e")   // plain URL; base64-encoded for you
+        .billing(new Address("Test", "Buyer", "1 Test Street", null, "Dar es Salaam", "Dar es Salaam", "11101", "TZ", "255700000001"))
+        .noOfItems(1)
+        .build());
 
-## Usage and API details
+if (order.status() == Status.SUCCESS) {
+    String payUrl = order.first().orElseThrow().paymentGatewayUrl();   // decoded for you; the raw base64 is kept too
+}
 
-This page does not show code samples yet. The API is still in development and may change before the first release. When the client is published, the README in the [repository](https://github.com/selcom-developers/selcom-java) is the place for install, quickstart and per-operation guidance.
+// 2. Later, confirm. Order status is the source of truth, never a webhook.
+Result<Responses.OrderStatusData> status = client.orderStatus(new Requests.OrderStatus("ORD-1001"));
+```
 
-## Before you start
+The environment is required and has no default. Every method returns a `Result` with one of five statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
 
-You need credentials from Selcom. See [Credentials and environments](/getting-started).
+The [README](https://github.com/selcom-developers/selcom-java#readme) covers configuration, every operation, error handling, idempotency, webhooks and using each layer on its own.
+
+## How it behaves
+
+The client follows the [shared spec](/spec). These pages explain what it does and why:
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
 
 ## Help and issues
 

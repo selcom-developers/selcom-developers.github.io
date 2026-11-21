@@ -1,51 +1,70 @@
 ---
 title: Node.js client
-description: The community Node.js client for the Selcom API gateway. v1 in development, not yet published.
+description: The community Node.js and TypeScript client for the Selcom payment API. Node 20 or later.
 ---
 
 # Node.js client
 
-> **Status: v1 in development, not yet published.** Not affiliated with Selcom Paytech Ltd.
-
-The Node.js client is one of four community clients for the Selcom API gateway. Language: TypeScript and JavaScript.
+Request signing, checkout, payouts and webhooks for TypeScript and JavaScript. Node 20 or later, ESM and CommonJS, with type declarations and no runtime dependencies.
 
 Repository: [selcom-developers/selcom-node](https://github.com/selcom-developers/selcom-node)
 
 ## Install
 
-**Available after the first release.** The package is not published yet, so this line does not work today.
-
 ```bash
-npm install @selcom-developers/selcom
+npm i @selcom-developers/selcom
 ```
 
-Registry: npm. Package: `@selcom-developers/selcom`.
+## Quickstart
 
-## What it follows
+Create an order, then push a USSD prompt to the buyer's mobile wallet.
 
-The client is written to the [shared spec](/spec). Read these pages to understand how it behaves:
+```ts
+import { SelcomClient } from "@selcom-developers/selcom";
 
-- [Request signing](/spec/signing)
-- [API v1 operations](/spec/api-v1)
-- [Results and retries](/spec/results)
-- [Webhooks](/spec/webhooks)
-- [Client requirements](/spec/client-requirements)
+const selcom = new SelcomClient({
+  config: {
+    environment: "sandbox", // required: "sandbox" or "production", there is no default
+    apiKey: process.env.SELCOM_API_KEY!,
+    secret: process.env.SELCOM_API_SECRET!,
+    vendor: process.env.SELCOM_VENDOR!,
+  },
+});
 
-In short, a client that follows the spec:
+// 1. Create an order (non-card), 2. push a USSD prompt to the buyer's wallet.
+const order = await selcom.createOrderMinimal({
+  orderId: "ORD-1001",
+  buyerEmail: "buyer@example.com",
+  buyerName: "Test Buyer",
+  buyerPhone: "255700000001",
+  amount: 8000, // whole units; fractions are rejected, never rounded
+  currency: "TZS", // always explicit
+  noOfItems: 1,
+  webhookUrl: "https://example.com/selcom/webhook/<random-token>",
+});
 
-- needs an explicit environment (`sandbox` or `production`), with no default;
-- signs every request, and fails closed if signing fails;
-- never retries a payment or a write on its own;
-- returns one of five typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`;
-- verifies webhooks and treats them as hints, not proof.
+const push = await selcom.walletPayment({
+  transid: "TXN-1001",
+  orderId: "ORD-1001",
+  msisdn: "255700000001",
+});
+// push.status is normally "PENDING": the outcome arrives by webhook and is confirmed with orderStatus.
+```
 
-## Usage and API details
+The environment is required and has no default. Every operation returns a result with one of five statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
 
-This page does not show code samples yet. The API is still in development and may change before the first release. When the client is published, the README in the [repository](https://github.com/selcom-developers/selcom-node) is the place for install, quickstart and per-operation guidance.
+The [README](https://github.com/selcom-developers/selcom-node#readme) covers configuration, every operation, error handling, idempotency, webhooks, signing on its own and replacing the transport.
 
-## Before you start
+## How it behaves
 
-You need credentials from Selcom. See [Credentials and environments](/getting-started).
+The client follows the [shared spec](/spec). These pages explain what it does and why:
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
 
 ## Help and issues
 

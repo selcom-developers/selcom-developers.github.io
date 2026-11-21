@@ -16,8 +16,12 @@ export default async function Page(props) {
   const { default: MDXContent, toc, metadata, sourceCode } = await importPage(
     params.mdxPath
   )
+  // The spec pages present the spec itself. Changes to the rules start in the
+  // spec repository, so these pages carry no "Edit this page" link.
+  const isSpecPage = params.mdxPath?.[0] === 'spec'
+  const pageMetadata = isSpecPage ? { ...metadata, filePath: undefined } : metadata
   return (
-    <Wrapper toc={toc} metadata={metadata} sourceCode={sourceCode}>
+    <Wrapper toc={toc} metadata={pageMetadata} sourceCode={sourceCode}>
       <MDXContent {...props} params={params} />
     </Wrapper>
   )

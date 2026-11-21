@@ -1,45 +1,34 @@
 ---
-title: Laravel client
-description: The community Laravel client for the Selcom API gateway. v1 in development, not yet published.
+title: Laravel package
+description: The community Laravel package for the Selcom payment API.
 ---
 
-# Laravel client
+# Laravel package
 
-> **Status: v1 in development, not yet published.** Not affiliated with Selcom Paytech Ltd.
-
-The Laravel client is one of four community clients for the Selcom API gateway. Language: PHP (Laravel).
+The Laravel package of the community clients. It reads its settings from your environment through a published config file and follows the same [spec](/spec) as the other clients.
 
 Repository: [selcom-developers/laravel-selcom](https://github.com/selcom-developers/laravel-selcom)
 
 ## Install
 
-**Available after the first release.** The package is not published yet. The install line will be added here when the first release is out. Until then, follow the [repository](https://github.com/selcom-developers/laravel-selcom) for progress.
+```bash
+composer require selcom-developers/laravel-selcom
+```
 
-## What it follows
+{/* TODO(laravel-quickstart): add the quickstart from the laravel-selcom README once its v1 branch is ready. */}
 
-The client is written to the [shared spec](/spec). Read these pages to understand how it behaves:
+Configuration, the webhook route and usage are documented in the [repository](https://github.com/selcom-developers/laravel-selcom).
 
-- [Request signing](/spec/signing)
-- [API v1 operations](/spec/api-v1)
-- [Results and retries](/spec/results)
-- [Webhooks](/spec/webhooks)
-- [Client requirements](/spec/client-requirements)
+## How it behaves
 
-In short, a client that follows the spec:
+The client follows the [shared spec](/spec). These pages explain what it does and why:
 
-- needs an explicit environment (`sandbox` or `production`), with no default;
-- signs every request, and fails closed if signing fails;
-- never retries a payment or a write on its own;
-- returns one of five typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`;
-- verifies webhooks and treats them as hints, not proof.
-
-## Usage and API details
-
-This page does not show code samples yet. The API is still in development and may change before the first release. When the client is published, the README in the [repository](https://github.com/selcom-developers/laravel-selcom) is the place for install, quickstart and per-operation guidance.
-
-## Before you start
-
-You need credentials from Selcom. See [Credentials and environments](/getting-started).
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
 
 ## Help and issues
 
