@@ -33,8 +33,6 @@ SELCOM_VENDOR=...                   # the vendor (till) ID
 SELCOM_PIN=...                      # float PIN: payout operations only
 ```
 
-{/* TODO(laravel-quickstart): re-check this quickstart against the laravel-selcom main README once v1 is merged. */}
-
 ## Quickstart
 
 The `Selcom` facade proxies the PHP client, so every operation of the [PHP client](/clients/php) is available.
@@ -61,6 +59,8 @@ match ($result->status) {
 
 $status = Selcom::orderStatus(new OrderStatusRequest('ORD-1001'));
 ```
+
+You can also type-hint `SelcomDevelopers\Selcom\Client` and let the container inject it.
 
 The [README](https://github.com/selcom-developers/laravel-selcom#readme) covers the container bindings, the webhook route, events, models, artisan commands and testing.
 

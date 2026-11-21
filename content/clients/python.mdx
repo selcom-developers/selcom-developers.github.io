@@ -1,0 +1,81 @@
+---
+title: Python client
+description: The community Python client for the Selcom payment API, with a synchronous and an asynchronous client on httpx. Python 3.10 or later.
+---
+
+# Python client
+
+Request signing, checkout, payouts and webhooks for Python 3.10 or later. A synchronous `Client` and an asynchronous `AsyncClient` share the same operations, built on [httpx](https://www.python-httpx.org/), the only runtime dependency.
+
+Repository: [selcom-developers/selcompy](https://github.com/selcom-developers/selcompy)
+
+## Install
+
+```bash
+pip install selcompy
+```
+
+## Quickstart
+
+Pay a utility bill from your float account and act on the typed status.
+
+```python
+from selcompy import (
+    Client,
+    Config,
+    Credentials,
+    Environment,
+    Status,
+    UtilityPaymentRequest,
+)
+
+config = Config(
+    environment=Environment.SANDBOX,  # no default: you always choose
+    credentials=Credentials(
+        api_key="...",
+        api_secret="...",
+        vendor="TILL123",
+        pin="...",
+    ),
+)
+
+with Client(config) as client:
+    result = client.utility_payment(
+        UtilityPaymentRequest(
+            transid="PAYOUT-1001",  # your own deterministic ID
+            utilitycode="LUKU",
+            utilityref="54100000001",
+            amount=5000,  # whole TZS
+        )
+    )
+    if result.status is Status.SUCCESS:
+        print(result.value.receipt)
+```
+
+The asynchronous client has the same operations, and every method is a coroutine:
+
+```python
+from selcompy import AsyncClient
+
+async with AsyncClient(config) as client:
+    result = await client.order_status("ORD-1001")
+```
+
+The environment is required and has no default. Every operation returns a `Result` with one of the typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
+
+The [README](https://github.com/selcom-developers/selcompy#readme) covers configuration, every operation, results and errors, idempotency, replacing the transport, webhooks and security.
+
+## How it behaves
+
+The client follows the [shared spec](/spec). These pages explain what it does:
+
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
+</LinkCards>
+
+## Help and issues
+
+Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/selcompy/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).
