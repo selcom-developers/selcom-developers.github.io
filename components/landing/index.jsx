@@ -18,8 +18,8 @@ const installs = [
     lang: 'xml',
     code: `<dependency>
   <groupId>io.github.selcom-developers</groupId>
-  <artifactId>selcom-client</artifactId>
-  <version>0.1.0</version>
+  <artifactId>selcom4j</artifactId>
+  <version>0.1.1</version>
 </dependency>`
   },
   { value: 'node', label: 'Node.js', registry: 'npm', runtime: 'Node 20 or later', href: '/clients/node', lang: 'bash', code: 'npm i @selcom-developers/selcom' },

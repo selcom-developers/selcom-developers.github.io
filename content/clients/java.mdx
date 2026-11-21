@@ -7,7 +7,7 @@ description: The community Java client for the Selcom payment API. Java 17 or la
 
 Request signing, a replaceable transport, typed checkout and payout operations, result classification, webhook verification and log redaction. Java 17 or later, with one runtime dependency: Jackson databind.
 
-Repository: [selcom-developers/selcom-java](https://github.com/selcom-developers/selcom-java)
+Repository: [selcom-developers/selcom4j](https://github.com/selcom-developers/selcom4j)
 
 ## Install
 
@@ -16,15 +16,15 @@ Maven:
 ```xml
 <dependency>
   <groupId>io.github.selcom-developers</groupId>
-  <artifactId>selcom-client</artifactId>
-  <version>0.1.0</version>
+  <artifactId>selcom4j</artifactId>
+  <version>0.1.1</version>
 </dependency>
 ```
 
 Gradle (Kotlin DSL):
 
 ```kotlin
-implementation("io.github.selcom-developers:selcom-client:0.1.0")
+implementation("io.github.selcom-developers:selcom4j:0.1.1")
 ```
 
 ## Quickstart
@@ -68,7 +68,7 @@ Result<Responses.OrderStatusData> status = client.orderStatus(new Requests.Order
 
 The environment is required and has no default. Every method returns a `Result` with one of five statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
 
-The [README](https://github.com/selcom-developers/selcom-java#readme) covers configuration, every operation, error handling, idempotency, webhooks and using each layer on its own.
+The [README](https://github.com/selcom-developers/selcom4j#readme) covers configuration, every operation, error handling, idempotency, webhooks and using each layer on its own.
 
 ## How it behaves
 
@@ -83,4 +83,4 @@ The client follows the [shared spec](/spec). These pages explain what it does:
 
 ## Help and issues
 
-Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/selcom-java/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).
+Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/selcom4j/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).
