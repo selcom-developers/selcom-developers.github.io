@@ -34,10 +34,12 @@ if ($status->status === Status::Success) { /* fulfil */ }`
   {
     name: 'Laravel',
     href: '/clients/laravel',
-    runtime: 'Laravel',
+    runtime: 'Laravel 12 or 13',
     pkg: 'selcom-developers/laravel-selcom',
-    lang: 'bash',
-    code: 'composer require selcom-developers/laravel-selcom'
+    lang: 'php',
+    code: `<?php
+$status = Selcom::orderStatus(new OrderStatusRequest('ORD-1001'));
+if ($status->status === Status::Success) { /* fulfil */ }`
   }
 ]
 

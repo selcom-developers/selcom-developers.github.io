@@ -15,11 +15,13 @@ Repository: [selcom-developers/selcom-php](https://github.com/selcom-developers/
 composer require selcom-developers/selcom-php
 ```
 
-The default transport builds a Guzzle client for each timeout profile, so install Guzzle too, or pass your own PSR-18 client or transport:
+The default transport builds a Guzzle client for each timeout profile, so the simplest setup also installs Guzzle:
 
 ```bash
 composer require guzzlehttp/guzzle
 ```
+
+Any other PSR-18 client works too. Its timeouts are then yours to set: see the README's transport section.
 
 ## Quickstart
 
@@ -46,7 +48,7 @@ $config = new Config(
     ),
 );
 
-$client = new Client($config);                          // PSR-18 client found by discovery
+$client = new Client($config);                          // default transport: a Guzzle client per timeout profile
 
 // Persist the transid BEFORE you call (see "Idempotency"), then:
 $result = $client->utilityPayment(new UtilityPaymentRequest(
@@ -71,7 +73,7 @@ The [README](https://github.com/selcom-developers/selcom-php#readme) covers conf
 
 ## How it behaves
 
-The client follows the [shared spec](/spec). These pages explain what it does and why:
+The client follows the [shared spec](/spec). These pages explain what it does:
 
 <LinkCards>
   <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>

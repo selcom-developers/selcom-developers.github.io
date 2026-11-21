@@ -28,7 +28,7 @@ const installs = [
     value: 'laravel',
     label: 'Laravel',
     registry: 'Packagist',
-    runtime: 'Laravel',
+    runtime: 'Laravel 12 or 13',
     href: '/clients/laravel',
     lang: 'bash',
     code: 'composer require selcom-developers/laravel-selcom'
@@ -104,7 +104,7 @@ export async function Landing() {
               href={item.href}
               className="sd-link font-semibold text-brand underline decoration-brand/40 underline-offset-4 hover:decoration-brand"
             >
-              {item.value === 'laravel' ? 'Laravel package' : `${item.label} quickstart`}
+              {item.label} quickstart
             </Link>
           </p>
         </div>

@@ -1,11 +1,11 @@
 ---
 title: Laravel package
-description: The community Laravel package for the Selcom payment API.
+description: The community Laravel package for the Selcom payment API, built on the PHP client.
 ---
 
 # Laravel package
 
-The Laravel package of the community clients. It reads its settings from your environment through a published config file and follows the same [spec](/spec) as the other clients.
+Laravel integration built on the [PHP client](/clients/php): configuration from your environment, container bindings you can replace, an opt-in webhook route, artisan commands, logging and testing helpers. Laravel 12 or 13.
 
 Repository: [selcom-developers/laravel-selcom](https://github.com/selcom-developers/laravel-selcom)
 
@@ -15,13 +15,58 @@ Repository: [selcom-developers/laravel-selcom](https://github.com/selcom-develop
 composer require selcom-developers/laravel-selcom
 ```
 
-{/* TODO(laravel-quickstart): add the quickstart from the laravel-selcom README once its v1 branch is ready. */}
+The service provider and the `Selcom` facade register themselves. Publish the config:
 
-Configuration, the webhook route and usage are documented in the [repository](https://github.com/selcom-developers/laravel-selcom).
+```bash
+php artisan vendor:publish --tag=selcom-config
+```
+
+## Configure
+
+Everything comes from the environment, through `config/selcom.php`. There is no default environment:
+
+```dotenv
+SELCOM_ENVIRONMENT=sandbox          # "sandbox" or "production". REQUIRED, no default
+SELCOM_API_KEY=...
+SELCOM_API_SECRET=...
+SELCOM_VENDOR=...                   # the vendor (till) ID
+SELCOM_PIN=...                      # float PIN: payout operations only
+```
+
+{/* TODO(laravel-quickstart): re-check this quickstart against the laravel-selcom main README once v1 is merged. */}
+
+## Quickstart
+
+The `Selcom` facade proxies the PHP client, so every operation of the [PHP client](/clients/php) is available.
+
+```php
+<?php
+
+use SelcomDevelopers\LaravelSelcom\Facades\Selcom;
+use SelcomDevelopers\Selcom\Request\OrderStatusRequest;
+use SelcomDevelopers\Selcom\Request\UtilityPaymentRequest;
+use SelcomDevelopers\Selcom\Status;
+
+// Persist the transid BEFORE you call (see "Idempotency and retries"), then:
+$result = Selcom::utilityPayment(new UtilityPaymentRequest(
+    transid: 'TXN-UTL-0001', utilityCode: 'LUKU', utilityRef: '01234567891', amount: 8000,
+));
+
+match ($result->status) {
+    Status::Success => /* paid */ null,
+    Status::Failed => /* it did not happen */ null,
+    Status::Pending, Status::Ambiguous => /* unknown: query later, never resubmit */ null,
+    Status::NotFound => /* only on queries */ null,
+};
+
+$status = Selcom::orderStatus(new OrderStatusRequest('ORD-1001'));
+```
+
+The [README](https://github.com/selcom-developers/laravel-selcom#readme) covers the container bindings, the webhook route, events, models, artisan commands and testing.
 
 ## How it behaves
 
-The client follows the [shared spec](/spec). These pages explain what it does and why:
+The client follows the [shared spec](/spec). These pages explain what it does:
 
 <LinkCards>
   <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>

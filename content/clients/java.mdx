@@ -11,7 +11,7 @@ Repository: [selcom-developers/selcom-java](https://github.com/selcom-developers
 
 ## Install
 
-Add the dependency from Maven Central:
+Maven:
 
 ```xml
 <dependency>
@@ -19,6 +19,12 @@ Add the dependency from Maven Central:
   <artifactId>selcom-client</artifactId>
   <version>0.1.0</version>
 </dependency>
+```
+
+Gradle (Kotlin DSL):
+
+```kotlin
+implementation("io.github.selcom-developers:selcom-client:0.1.0")
 ```
 
 ## Quickstart
@@ -66,7 +72,7 @@ The [README](https://github.com/selcom-developers/selcom-java#readme) covers con
 
 ## How it behaves
 
-The client follows the [shared spec](/spec). These pages explain what it does and why:
+The client follows the [shared spec](/spec). These pages explain what it does:
 
 <LinkCards>
   <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>

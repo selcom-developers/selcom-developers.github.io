@@ -9,17 +9,19 @@ The spec is the shared source of truth for all four clients: the rules, worked e
 
 If a client and the spec disagree, the client is wrong, or the spec needs a fix that every client then picks up.
 
-> **Not official.** The spec is not affiliated with, endorsed by or supported by Selcom Paytech Ltd. Where it and [Selcom's developer portal](https://developers.selcommobile.com/) disagree about the API itself, the portal wins.
+<Callout title="Not official">
+The spec is not affiliated with, endorsed by or supported by Selcom Paytech Ltd. Where it and [Selcom's developer portal](https://developers.selcommobile.com/) disagree about the API itself, the portal wins.
+</Callout>
 
 ## Pages
 
-| Page | What it covers |
-|---|---|
-| [Request signing](/spec/signing) | The exact signing algorithm, with worked examples and pitfalls |
-| [API v1 operations](/spec/api-v1) | Checkout and payouts: 16 operations plus the webhook |
-| [Results and retries](/spec/results) | Result codes, the five typed statuses, idempotency |
-| [Webhooks](/spec/webhooks) | Verifying and handling checkout webhooks |
-| [Client requirements](/spec/client-requirements) | What every client must do |
+<LinkCards>
+  <LinkCard href="/spec/signing" title="Request signing">The exact signing algorithm, with worked examples and pitfalls.</LinkCard>
+  <LinkCard href="/spec/api-v1" title="API v1 operations">Checkout and payouts: 16 operations plus the webhook.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">Result codes, the five typed statuses, idempotency.</LinkCard>
+  <LinkCard href="/spec/webhooks" title="Webhooks">Verifying and handling checkout webhooks.</LinkCard>
+  <LinkCard href="/spec/client-requirements" title="Client requirements">What every client must do.</LinkCard>
+</LinkCards>
 
 ## Test vectors
 

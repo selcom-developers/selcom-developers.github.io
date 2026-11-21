@@ -1,19 +1,17 @@
 ---
 title: Clients
-description: The four community clients for the Selcom API gateway.
+description: The four community clients for the Selcom payment API.
 ---
 
 # Clients
 
-Four community clients are in development. They follow the same [spec](/spec), so they sign requests and read results in the same way.
+Four community clients follow the same [spec](/spec), so they sign requests and read results in the same way. Pick the one for your stack.
 
-| Client | Repository | Status |
-|---|---|---|
-| [Java](/clients/java) | [selcom-developers/selcom-java](https://github.com/selcom-developers/selcom-java) | v1 in development, not yet published |
-| [Node.js](/clients/node) | [selcom-developers/selcom-node](https://github.com/selcom-developers/selcom-node) | v1 in development, not yet published |
-| [PHP](/clients/php) | [selcom-developers/selcom-php](https://github.com/selcom-developers/selcom-php) | v1 in development, not yet published |
-| [Laravel](/clients/laravel) | [selcom-developers/laravel-selcom](https://github.com/selcom-developers/laravel-selcom) | v1 in development, not yet published |
-
-All four are **v1 in development, not yet published**. Not affiliated with Selcom Paytech Ltd.
+<LinkCards>
+  <LinkCard href="/clients/java" title="Java" detail="io.github.selcom-developers:selcom-client">Java 17 or later. One runtime dependency: Jackson databind.</LinkCard>
+  <LinkCard href="/clients/node" title="Node.js" detail="@selcom-developers/selcom">TypeScript and JavaScript on Node 20 or later. No runtime dependencies.</LinkCard>
+  <LinkCard href="/clients/php" title="PHP" detail="selcom-developers/selcom-php">PHP 8.2 or later, any framework. PSR-18 HTTP.</LinkCard>
+  <LinkCard href="/clients/laravel" title="Laravel" detail="selcom-developers/laravel-selcom">Laravel 12 or 13, built on the PHP client.</LinkCard>
+</LinkCards>
 
 Not sure which to pick? See [Choosing a client](/getting-started/choosing-a-client).
