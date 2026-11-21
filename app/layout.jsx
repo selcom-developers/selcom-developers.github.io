@@ -6,6 +6,7 @@ import 'nextra-theme-docs/style.css'
 import './globals.css'
 import { SiteLogo } from '@/components/brand/seal'
 import { SiteFooter } from '@/components/site/site-footer'
+import { OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/seo'
 
 // Atkinson Hyperlegible Next and Mono: designed so that 0/O and 1/l/I never
 // look alike, which matters on a site full of keys, digests and IDs.
@@ -40,12 +41,18 @@ const codeFont = localFont({
 })
 
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Selcom Developers',
-    template: '%s | Selcom Developers'
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`
   },
-  description:
-    'Open-source community clients for the Selcom payment API in Java, Node.js, Python, PHP and Laravel. Not affiliated with Selcom Paytech Ltd.'
+  description: SITE_DESCRIPTION,
+  // Pages set their own openGraph (see app/[[...mdxPath]]/page.jsx). The card
+  // has no title or description here, so X falls back to each page's og: tags.
+  twitter: {
+    card: 'summary_large_image',
+    images: [OG_IMAGE.url]
+  }
 }
 
 const navbar = (
