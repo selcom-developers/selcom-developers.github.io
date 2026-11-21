@@ -55,7 +55,7 @@ if ($status->status === Status::Success) { /* fulfil */ }`
 
 export function SameSpec() {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2 md:[&>*:last-child:nth-child(odd)]:col-span-2">
       {clients.map((client) => (
         <article key={client.name} className="flex min-w-0 flex-col rounded-xl border border-rule bg-card">
           <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-5 pt-5">
