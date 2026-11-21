@@ -1,0 +1,217 @@
+---
+description: How every request to the gateway is signed, with a worked example.
+---
+
+# Request signing
+
+*Ported from [`docs/signing.md`](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/signing.md) at spec tag `v0.1.0`. The spec repository is the source of truth.*
+
+
+Every request to the Selcom API gateway is signed: GET and DELETE as well as POST. This page is the exact algorithm that all community clients implement. `tools/selcom_reference.py` is the executable version, and `vectors/signing.json` holds the cases that every client must reproduce byte for byte.
+
+The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119.
+
+## Headers
+
+| Header | Value |
+|---|---|
+| `Authorization` | `SELCOM ` followed by the base64 of the API key's UTF-8 bytes |
+| `Digest-Method` | `HS256` |
+| `Digest` | base64 of HMAC-SHA256 over the signing string, keyed with the API secret |
+| `Timestamp` | the request time, `yyyy-MM-ddTHH:mm:ss±HH:MM` (or `±HHMM`), for example `2026-11-21T10:30:46+03:00` |
+| `Signed-Fields` | the parameter keys, in send order, joined with `,` and no spaces |
+
+Also send `Accept: application/json`, and `Content-Type: application/json` on POST.
+
+## The algorithm
+
+Input: the request parameters as an ordered map (the order the caller gave them), a timestamp, the API key and the API secret.
+
+1. **Flatten.** Walk the parameters in order. A nested object is replaced, in place, by its own fields with the parent key and a dot in front: `billing: {firstname, lastname}` becomes `billing.firstname`, `billing.lastname` at the position where `billing` was. Nesting can go deeper (`a.b.c`). The result is an ordered list of `(key, value)` pairs with scalar values only.
+2. **Normalise each value** (see [Values](#values)). The normalised value is what is signed *and* what is sent.
+3. **Build `Signed-Fields`**: the flattened keys in order, joined with `,`.
+4. **Build the signing string**: `timestamp=` + the timestamp, then for each pair `&` + key + `=` + value text. Values go in raw: no URL encoding, no JSON quoting, no escaping, no trimming.
+5. **Compute the digest**: `base64(HMAC_SHA256(key = utf8(secret), message = utf8(signing_string)))`, standard base64 with padding.
+6. **Build `Authorization`**: `"SELCOM " + base64(utf8(api_key))`.
+7. **Put it on the wire.**
+   - **POST**: a JSON object whose keys are the *flattened* keys, in the same order, with the normalised values. Nested objects are sent flat: `{"billing.firstname":"John"}`, never `{"billing":{"firstname":"John"}}`.
+   - **GET and DELETE**: no body. The flattened pairs go in the query string, in the same order, each key and value percent-encoded per RFC 3986 (UTF-8; everything except `A-Z a-z 0-9 - . _ ~` is encoded, so a space is `%20` and `+` is `%2B`). The signature covers the *decoded* values, exactly as in step 4.
+
+Method and path are not part of the signature. The same fields and timestamp give the same digest on GET, POST or DELETE (see vector `delete-same-digest-as-get`).
+
+Sign every field you send, and send every field you sign. A field that is sent but not signed, or signed but not sent, is a bug.
+
+### Values
+
+| Value | Signed as | Sent as (POST body) | Sent as (query) |
+|---|---|---|---|
+| string | the string, unchanged | the string | percent-encoded string |
+| integer | plain base-10 digits, `-` if negative: `8000`, `-5` | JSON integer | digits |
+| number with no fractional part (`8000.0`) | as the integer: `8000` | JSON integer `8000` | `8000` |
+| number with a fractional part (`8000.5`) | **rejected** | | |
+| integer beyond ±(2^53 − 1) | **rejected**: send it as a string | | |
+| `true` / `false` | `true` / `false` | JSON boolean | `true` / `false` |
+| `null` | empty string | `""` | `key=` |
+| array | **rejected**: there is no flat form | | |
+| empty object | **rejected**: omit it | | |
+
+No v1 field takes a boolean. The rule exists so that every client formats one the same way.
+
+The string `"8000"` and the integer `8000` sign identically. Only the body differs (`"amount":"8000"` against `"amount":8000`). See vectors `amount-as-integer` and `amount-as-string`.
+
+`null` is sent as `""` rather than JSON `null` so that the value on the wire and the value in the signature are the same text whatever the server does with nulls. Better still, leave out optional fields that have no value.
+
+### Keys
+
+A flattened key is one or more segments of `A-Z a-z 0-9 _ -` joined by `.`. A key with any other character (a comma would corrupt `Signed-Fields`; `&` or `=` would make the signing string ambiguous) is rejected. A key that appears twice after flattening (`billing.firstname` given both flat and nested) is rejected. Callers may pass dotted keys already flat; the result is the same as passing the nested object (vector `flat-dotted-key-same-as-nested`).
+
+### Timestamp
+
+- Format `yyyy-MM-ddTHH:mm:ss±HH:MM`: four-digit year, seconds, no fractional seconds, and a numeric offset. Clients generate the colon form (`+03:00`), as in Selcom's documentation. A caller-supplied timestamp may also use the basic form without a colon (`+0300`): Selcom's official Java client sends that form (`yyyy-MM-dd'T'HH:mm:ssZ`) while its PHP client sends the colon form (`date('c')`). It is signed exactly as given (vector `timestamp-offset-without-colon`). `Z` is not accepted: write `+00:00`.
+- Generate it fresh for each request from the current instant. Never reuse one across requests.
+- The `Timestamp` header and the `timestamp=` value in the signing string are the same string, character for character.
+- Clients SHOULD default to the `Africa/Dar_es_Salaam` zone (`+03:00`, no daylight saving) and MAY let the caller choose another. Any offset signs correctly; the gateway rejects requests whose time is too far from its own clock, so keep the host clock synchronised.
+- Take the clock as a dependency so that tests can fix it.
+
+### Failing closed
+
+The signer raises an error, and the client sends nothing, when:
+
+- the secret or the API key is empty;
+- a value or key breaks the rules above;
+- there are no parameters at all (every v1 operation has at least one);
+- the timestamp does not match the format;
+- the digest would come out empty for any reason.
+
+**Never send a request with an empty or missing `Digest`.** Do not catch a signing error and carry on without the header. The `rejects` list in `vectors/signing.json` covers each refusal; clients MUST raise for every entry.
+
+## Worked examples
+
+All three use the sample credentials printed in Selcom's public documentation, which are not working credentials:
+
+```
+api_key   = 202cb962ac59075b964b07152d234b70
+secret    = 81dc9bdb52d04dc20036dbd8313ed055
+timestamp = 2019-02-26T09:30:46+03:00
+```
+
+`Authorization` is the same for all three:
+
+```
+base64("202cb962ac59075b964b07152d234b70") = MjAyY2I5NjJhYzU5MDc1Yjk2NGIwNzE1MmQyMzRiNzA=
+Authorization: SELCOM MjAyY2I5NjJhYzU5MDc1Yjk2NGIwNzE1MmQyMzRiNzA=
+```
+
+### 1. One field, GET (`known-get-single-field`)
+
+```
+GET /v1/checkout/order-status?order_id=ORD-1001
+
+Signed-Fields:  order_id
+signing string: timestamp=2019-02-26T09:30:46+03:00&order_id=ORD-1001
+Digest:         pR8qs83hQ34a6EoxXGOKL4yg+JDeJAtzOY6E8fTlvwk=
+```
+
+### 2. Nested billing, POST (`known-post-nested-billing`)
+
+Parameters as the caller gives them:
+
+```json
+{"vendor": "TILL123", "order_id": "ORD-1001", "amount": 8000, "billing": {"firstname": "John"}}
+```
+
+```
+POST /v1/checkout/create-order
+
+Signed-Fields:  vendor,order_id,amount,billing.firstname
+signing string: timestamp=2019-02-26T09:30:46+03:00&vendor=TILL123&order_id=ORD-1001&amount=8000&billing.firstname=John
+Digest:         1RVQp/zJv4qFUPBYjAGwZ9kUPINsYSLc9030CfIWwPM=
+Body:           {"vendor":"TILL123","order_id":"ORD-1001","amount":8000,"billing.firstname":"John"}
+```
+
+### 3. Reserved characters, GET (`reserved-characters-get`)
+
+With timestamp `2026-11-21T10:30:46+03:00` and `utilityref` = `A&B=C+D E/F%G~H`:
+
+```
+Query string:   utilitycode=LUKU&utilityref=A%26B%3DC%2BD%20E%2FF%25G~H&transid=TXN-LKP-0002
+signing string: timestamp=2026-11-21T10:30:46+03:00&utilitycode=LUKU&utilityref=A&B=C+D E/F%G~H&transid=TXN-LKP-0002
+Digest:         m8KyUwdkSqajdVVT3OQqTkeYncbc+INQ+owJI6w1+QI=
+```
+
+The query string is encoded; the signing string is not.
+
+## Pitfalls
+
+**Field order**
+- The order is the caller's order. Do not sort keys, and do not let a hash map reorder them. Use `LinkedHashMap` in Java, an ordered array in PHP, and a `Map` (or an array of pairs) in JavaScript, where plain objects move integer-like keys such as `"23"` to the front.
+- Nested fields flatten *in place*, not at the end.
+- When reading `vectors/signing.json`, use a parser that keeps object key order, or use the `expected.flattened` list, which is ordered by construction.
+
+**Number formatting**
+- `8000`, never `8000.0`, `8000.00`, `8,000` or `8e3`. In Java, `Double.toString`, Jackson's `DoubleNode` and Gson's default mapping of JSON numbers to `Double` all end up as `8000.0`; convert to a whole number first.
+- Amounts are whole shillings. Reject a fractional amount: do not round it and do not truncate it.
+- JavaScript cannot hold integers beyond 2^53 − 1 exactly. Such values must travel as strings.
+
+**Booleans and nulls**
+- PHP's string cast turns `true` into `"1"` and `false` into `""`. Format booleans explicitly as `true` / `false`.
+- JavaScript template strings turn `null` into `"null"`. Format nulls explicitly as the empty string.
+
+**Nested flattening**
+- Never sign the nested object as compact JSON (`billing={"firstname":"John"}`). The gateway rejects that signature.
+- Send the flat keys in the body. The signature describes flat keys, so the body must carry flat keys.
+
+**Timestamp format**
+- Java's `ISO_OFFSET_DATE_TIME` prints `Z` for UTC and adds fractional seconds when they are not zero. Use the pattern `yyyy-MM-dd'T'HH:mm:ssxxx` on a time truncated to seconds. Lower-case `xxx` prints `+00:00` for UTC; upper-case `XXX` prints `Z`.
+- PHP's `DATE_ATOM` (`Y-m-d\TH:i:sP`) gives the default colon form. `DATE_ISO8601` (`O`, no colon) also signs correctly, but clients should generate the colon form.
+- In JavaScript, `toISOString()` is always UTC with milliseconds and `Z`. Build the string yourself.
+- Do not share a formatter instance across threads where the formatter is not thread-safe (`SimpleDateFormat`).
+
+**Digest and keys**
+- The HMAC key is the API secret and the message is the signing string. Selcom's prose writes the arguments in the other order; do not swap them.
+- The secret is used as UTF-8 text. It looks like hex; do not hex-decode it.
+- `Authorization` encodes the API key alone, not `key:secret`.
+- Standard base64 with `+`, `/` and `=` padding, not the URL-safe alphabet.
+- Compare digests (for example on webhooks) in constant time.
+
+**Signed-Fields**
+- No spaces after the commas. Some published samples have them; the gateway compares exact strings.
+- List exactly the fields you send, in the order you send them.
+
+**Query strings**
+- Encode spaces as `%20`, not `+` (form encoding). Encode `+` as `%2B`.
+- Do not encode twice. A value that already contains `%20` as text is sent as `%2520` and signed as `%20`.
+- Do not put the encoded form into the signing string.
+
+**URLs inside parameters**
+- `redirect_url`, `cancel_url` and `webhook` on checkout orders are base64-encoded URLs. Encode them before signing: the signature covers the base64 text that is sent.
+
+**Never send an empty digest**
+- If the secret is missing from configuration, fail at startup or at the first call, loudly. Do not send `Digest:` with an empty value, and do not leave the header off.
+
+## Pluggable signer
+
+The digest step sits behind an interface so that RS256 can be added without touching request building:
+
+```
+interface Signer {
+    method(): string                       // "HS256" or "RS256"; sent as Digest-Method
+    sign(signingString: string): string    // base64 digest; never empty
+}
+```
+
+- **HS256** (implemented now): HMAC-SHA256 keyed with the API secret.
+- **RS256** (ready, not yet implemented): an RSA-SHA256 signature over the UTF-8 signing string with the merchant's private key, base64-encoded. Selcom's documentation lists RS256 but does not say which padding is used or how the public key is registered. PKCS#1 v1.5 is the likely choice; confirm with Selcom before shipping. RS256 vectors will be added once a confirmed example exists.
+
+Everything else (flattening, values, timestamp, headers, encoding) is shared and does not depend on the signer.
+
+Each client also exposes a pure function, with no I/O and no clock, that takes `(params, timestamp, api_key, signer)` and returns the flattened pairs, `Signed-Fields`, the signing string, the headers, and the query string or body. The vectors are run against that function.
+
+## Running the reference
+
+```
+python tools/generate_vectors.py           # regenerate vectors/signing.json
+python tools/generate_vectors.py --check   # what CI runs
+```
+
+The generator first checks itself against the three known values above and stops if any of them does not match.

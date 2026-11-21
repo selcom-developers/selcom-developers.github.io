@@ -1,0 +1,32 @@
+---
+title: Spec
+description: The shared rules and test vectors that every community Selcom client follows.
+---
+
+# Spec
+
+The spec is the shared source of truth for all four clients. It holds the rules, worked examples and test vectors. The pages in this section are ported from the [selcom-spec](https://github.com/selcom-developers/selcom-spec) repository at tag `v0.1.0`.
+
+If a client and the spec disagree, the client is wrong, or the spec needs a fix that every client then picks up.
+
+> **Not official.** The spec is not affiliated with, endorsed by or supported by Selcom Paytech Ltd. Where it and [Selcom's developer portal](https://developers.selcommobile.com/) disagree about the API itself, the portal wins.
+
+## Pages
+
+| Page | What it covers | Source |
+|---|---|---|
+| [Request signing](/spec/signing) | The exact signing algorithm, with worked examples and pitfalls | [docs/signing.md](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/signing.md) |
+| [API v1 operations](/spec/api-v1) | Checkout and payouts: 16 operations plus the webhook | [docs/api-v1.md](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/api-v1.md) |
+| [Results and retries](/spec/results) | Result codes, the five typed statuses, idempotency | [docs/results.md](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/results.md) |
+| [Webhooks](/spec/webhooks) | Verifying and handling checkout webhooks | [docs/webhooks.md](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/webhooks.md) |
+| [Client requirements](/spec/client-requirements) | What every client must do | [docs/client-requirements.md](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/client-requirements.md) |
+
+## Test vectors
+
+The spec repository also holds test vectors that every client must pass:
+
+- [`vectors/signing.json`](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/vectors/signing.json): signing cases and rejects.
+- [`vectors/responses/`](https://github.com/selcom-developers/selcom-spec/tree/v0.1.0/vectors/responses): response fixtures and webhook samples.
+- [`tools/`](https://github.com/selcom-developers/selcom-spec/tree/v0.1.0/tools): the Python reference implementation.
+
+All credentials in the vectors are sample values or made up. None of them works against the gateway.

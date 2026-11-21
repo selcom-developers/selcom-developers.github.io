@@ -1,0 +1,53 @@
+---
+title: Contributing
+description: How to help with the community Selcom clients, the spec and this site.
+---
+
+# Contributing
+
+Thank you for helping. These projects are run by the community, and every fix counts.
+
+## Where to contribute
+
+| What | Where |
+|---|---|
+| Rules, test vectors, API notes | [selcom-spec](https://github.com/selcom-developers/selcom-spec) |
+| Java client | [selcom-java](https://github.com/selcom-developers/selcom-java) |
+| Node.js client | [selcom-node](https://github.com/selcom-developers/selcom-node) |
+| PHP client | [selcom-php](https://github.com/selcom-developers/selcom-php) |
+| Laravel package | [laravel-selcom](https://github.com/selcom-developers/laravel-selcom) |
+| This site | [selcom-developers.github.io](https://github.com/selcom-developers/selcom-developers.github.io) |
+
+## How to propose a change
+
+1. Open an issue first for anything large, so we can agree on the approach.
+2. Fork the repository and make a branch.
+3. Make your change. Keep it small and focused.
+4. Open a pull request and describe what changed and why.
+
+Each repository has its own contributing notes. Read them before you start.
+
+## Changing the rules
+
+The spec decides how all four clients behave. A change to the spec changes every client, so it needs care.
+
+- Change the doc and the reference implementation in the same pull request.
+- Regenerate the test vectors. Never edit the signing vectors by hand.
+- Open an issue in each client for the change.
+
+## Clean-room rule
+
+The community clients are written from scratch. When you contribute:
+
+- You may read Selcom's public developer docs and the spec.
+- Do not copy code from Selcom's official clients or from other clients with a different licence.
+- Write your own code, under the Apache License 2.0.
+
+## Keep data safe
+
+- Never commit real credentials, real customer data, or details of any merchant's integration.
+- Use made-up data in examples and tests: phone numbers like `255700000001`, order IDs like `ORD-1001`, keys like `test-key-0001`.
+
+## Improving this site
+
+The pages are MDX files in the `content` folder. Each page has an "Edit this page" link. See the repository README for how to run the site on your own machine.

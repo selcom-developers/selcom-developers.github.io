@@ -1,0 +1,56 @@
+---
+title: Java client
+description: The community Java client for the Selcom API gateway. v1 in development, not yet published.
+---
+
+# Java client
+
+> **Status: v1 in development, not yet published.** Not affiliated with Selcom Paytech Ltd.
+
+The Java client is one of four community clients for the Selcom API gateway. Language: Java.
+
+Repository: [selcom-developers/selcom-java](https://github.com/selcom-developers/selcom-java)
+
+## Install
+
+**Available after the first release.** The package is not published yet, so this line does not work today.
+
+```text
+<dependency>
+  <groupId>io.github.selcom-developers</groupId>
+  <artifactId>selcom-client</artifactId>
+  <version>VERSION</version>
+</dependency>
+```
+
+Registry: Maven Central. Package: `io.github.selcom-developers:selcom-client`. Replace `VERSION` with the released version.
+
+## What it follows
+
+The client is written to the [shared spec](/spec). Read these pages to understand how it behaves:
+
+- [Request signing](/spec/signing)
+- [API v1 operations](/spec/api-v1)
+- [Results and retries](/spec/results)
+- [Webhooks](/spec/webhooks)
+- [Client requirements](/spec/client-requirements)
+
+In short, a client that follows the spec:
+
+- needs an explicit environment (`sandbox` or `production`), with no default;
+- signs every request, and fails closed if signing fails;
+- never retries a payment or a write on its own;
+- returns one of five typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`;
+- verifies webhooks and treats them as hints, not proof.
+
+## Usage and API details
+
+This page does not show code samples yet. The API is still in development and may change before the first release. When the client is published, the README in the [repository](https://github.com/selcom-developers/selcom-java) is the place for install, quickstart and per-operation guidance.
+
+## Before you start
+
+You need credentials from Selcom. See [Credentials and environments](/getting-started).
+
+## Help and issues
+
+Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/selcom-java/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).

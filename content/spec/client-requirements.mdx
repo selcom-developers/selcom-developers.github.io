@@ -1,0 +1,113 @@
+---
+description: What every community client must do.
+---
+
+# What every client must do
+
+*Ported from [`docs/client-requirements.md`](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/client-requirements.md) at spec tag `v0.1.0`. The spec repository is the source of truth.*
+
+The Java, Node/TypeScript, PHP and Laravel clients differ in idiom, not in behaviour. This is the checklist they are reviewed against. MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119.
+
+## Configuration and environments
+
+- The environment MUST be chosen explicitly. There is **no default**, and in particular no production default: a client built without an environment fails to start with a clear message.
+- Presets:
+
+  | Environment | Base URL |
+  |---|---|
+  | `production` | `https://apigw.selcommobile.com` |
+  | `sandbox` | `https://apigwtest.selcommobile.com` |
+
+- A custom base URL (for a simulator or a proxy) MAY be allowed, but only as its own explicit choice, never as a silent override of a preset.
+- Configuration holds the API key, the API secret and the vendor (till) ID. Payout operations also need the float PIN. A merchant MAY use separate credentials for checkout and for payouts; clients SHOULD allow a second credential set for checkout.
+- A missing secret, key or vendor fails at construction time, not on the first request. The secret and PIN MUST NOT appear in `toString()`, `__debugInfo()`, `inspect()` or exception messages.
+- The Laravel package reads its settings from the environment through a published config file and follows the same rules: no default environment.
+
+## Timeouts
+
+- Timeouts MUST be configurable, per timeout profile.
+- Defaults:
+
+  | Profile | Used by | Connect | Read |
+  |---|---|---|---|
+  | query | `status-query`, `order-status`, `other` operations | 10 s | 10 s |
+  | money-moving | `payment` operations | 15 s | 180 s |
+
+- The long read timeout on payments is deliberate. Timing out early does not stop the payment; it only turns a known answer into an unknown one.
+- No operation may run without a timeout.
+
+## Transport errors
+
+When no HTTP response is received, the client raises a transport error that says which of two things happened:
+
+| Classification | When | Meaning |
+|---|---|---|
+| `NOT_SENT` | DNS resolution failed; connection refused; connect timeout; TLS handshake failed; proxy refused the connection | The request provably never reached the gateway. Sending it again with the same ID is safe |
+| `UNKNOWN_OUTCOME` | Anything after the request may have been written: read or write timeout, connection reset, truncated response, TLS error mid-stream | The gateway may have acted. Treat as `AMBIGUOUS`: query, never resend |
+
+If the HTTP library cannot tell which case it is, the answer is `UNKNOWN_OUTCOME`.
+
+- Transport errors MUST NOT be disguised as gateway responses, and MUST NOT become a `FAILED` status.
+- The client MUST NOT retry `payment` operations or writes, whatever the error. For other operations it MAY retry a `NOT_SENT` error, only if the caller opted in, with the same parameters and a fresh timestamp.
+- A response that did arrive but carries no verdict (an HTML error page, an empty body) is not a transport error; it is classified as in [results.md](/spec/results#classification).
+
+## Money
+
+- Amounts are whole units of a currency, modelled as an integer (or an exact decimal type) together with an explicit currency code. Never a binary floating-point number.
+- A fractional amount MUST be rejected before signing. It MUST NOT be rounded or truncated.
+- Conversions MUST be exact and overflow-checked (no silent `int` overflow; in JavaScript, nothing above `Number.MAX_SAFE_INTEGER`).
+- The currency MUST be explicit. Clients never assume TZS on checkout, where `currency` is a field. Payout operations are TZS-only and MUST reject any other currency.
+- Amounts in responses and webhooks arrive as strings, sometimes with thousands separators (`"10,000"`). Parse them strictly into whole units; reject anything else.
+
+## Logging, secrets and personal data
+
+- Clients MUST NOT log the API secret, the PIN, the `Authorization` header or the `Digest` header, at any log level, including debug and request dumps.
+- Each client ships a redaction helper that applies these rules to headers, flat or nested JSON bodies, and query strings:
+
+  | Data | Fields (and their `billing.` / `shipping.` forms) | Redacted form |
+  |---|---|---|
+  | Secrets | `pin`, `secret`, `api_secret`, `Authorization`, `Digest`, `card_token` | `[REDACTED]` |
+  | Phone numbers | `msisdn`, `phone`, `buyer_phone`, and `utilityref` on wallet cash-in | all but the last 4 digits replaced: `********0001` |
+  | E-mail | `buyer_email`, `email` | first character of the local part, then the domain: `t***@example.com` |
+  | Names | `buyer_name`, `firstname`, `lastname`, `name` | first character: `T***` |
+
+- The client's own logging, if any, goes through the helper. Callers are told to use it for anything they store or log.
+- Clients MUST NOT invent buyer data. If a field the gateway requires is missing, the client raises an error; it does not fill in placeholders.
+
+## Signing
+
+- Signing follows [signing.md](/spec/signing) exactly and is behind a pluggable signer interface: HS256 now, RS256 to come without changes elsewhere.
+- Each client exposes a pure signing function (no I/O, no clock) so that `vectors/signing.json` can be run against it.
+- The timestamp comes from an injectable clock.
+- The client fails closed: on any signing error, nothing is sent.
+
+## API shape
+
+- One method per v1 operation, named after it (`createOrder`, `walletPayment`, `orderStatus`, `utilityPayment`, `utilityQuery`, and so on, in each language's style).
+- Submitting and querying are separate methods. Nothing hides a query inside a submit.
+- Every method returns the result object from [results.md](/spec/results#the-result-object): the typed status, the code and text, the HTTP status, the decoded data and the raw body.
+- The HTTP transport is injectable (PSR-18 in PHP, `fetch` in Node, `java.net.http.HttpClient` or an interface over it in Java) so that tests can run without a network.
+- Webhook support: `verify(headers, rawBody)` returning the verdicts in [webhooks.md](/spec/webhooks#verification), and an amount parser. The Laravel package adds a route, middleware and an event, and follows the handling steps in that page.
+- Clients SHOULD send a `User-Agent` naming the client and its version, for example `selcom-node/0.1.0`.
+
+## Concurrency is the caller's job
+
+The client is stateless between calls; it does not lock, queue or deduplicate. Each client's README tells callers how to stay safe:
+
+- Persist the `transid` or `order_id`, with a "submitting" state, before calling the gateway. After a crash, reconcile anything left in that state by querying.
+- Put a unique constraint on the ID, so that a retried job cannot create a second transaction.
+- Apply results under a row lock or with a compare-and-set, behind the final-state guard in [webhooks.md](/spec/webhooks#final-state-guard).
+
+## Tests
+
+Each client's CI MUST:
+
+- run every case in `vectors/signing.json` against the pure signing function and match `flattened`, `signed_fields`, `signing_string`, `digest` and `authorization`, plus `query` for GET and DELETE, and, for POST, a body with the same keys in the same order and the same values;
+- raise an error for every entry in `rejects`;
+- classify every scenario in `vectors/responses/*.json` to its `expected_status` or `expected_error`;
+- run the webhook samples in order through one replay store with the clock fixed at `verification.now`, and match each verdict and amount;
+- pin the version of this repository it was tested against (a commit SHA or tag).
+
+Each client SHOULD also have a local simulator (no network) covering: success, wrong PIN, failure, timeout before and after sending, `404` on the query, in progress, ambiguous, insufficient balance, a bad signature, and webhooks that arrive late, twice or out of order.
+
+Tests against the real sandbox MUST be opt-in (for example behind an environment variable) and MUST NOT run by default or in pull requests from forks. Credentials come from the environment, never from the repository.

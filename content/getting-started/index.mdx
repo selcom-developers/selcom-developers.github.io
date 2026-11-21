@@ -1,0 +1,45 @@
+---
+title: Credentials and environments
+description: What you need from Selcom, and the sandbox and production base URLs.
+---
+
+# Credentials and environments
+
+Before you write any code, you need access to the gateway. Selcom gives it to you. We do not.
+
+## What you need from Selcom
+
+Ask Selcom (through [the developer portal](https://developers.selcommobile.com/) or your account contact) for:
+
+- An **API key** and an **API secret**.
+- A **vendor** (till) ID.
+- For payouts, a **float account** ID and its **PIN**.
+
+Treat the secret and the PIN like passwords. Keep them in environment variables or a secrets manager. Never commit them. Never log them.
+
+## Environments
+
+There are two environments. Each has its own base URL.
+
+| Environment | Base URL |
+|---|---|
+| Sandbox | `https://apigwtest.selcommobile.com` |
+| Production | `https://apigw.selcommobile.com` |
+
+Every API path starts with `/v1/`. For example, `https://apigwtest.selcommobile.com/v1/checkout/order-status`.
+
+Source: [client requirements](/spec/client-requirements#configuration-and-environments) and [API v1](/spec/api-v1#conventions).
+
+## Pick the environment on purpose
+
+Our clients have **no default environment**. You must set `sandbox` or `production`. A client built without one fails at start-up with a clear message.
+
+We did this so that a missing setting can never send test code to production. Start in the sandbox.
+
+## How the clients behave
+
+The clients are written to the [shared spec](/spec). They sign every request, including GET and DELETE. They never retry a payment on their own. A timeout on a payment is treated as "unknown", and you settle it by asking the gateway. Read [Results and retries](/spec/results) before you send a payment.
+
+## Next step
+
+[Choose a client](/getting-started/choosing-a-client).

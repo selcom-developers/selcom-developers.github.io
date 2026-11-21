@@ -1,0 +1,37 @@
+---
+title: Security reporting
+description: How to report a security problem in a community Selcom client.
+---
+
+# Security reporting
+
+Please report security problems privately. Do not open a public issue.
+
+## How to report
+
+Use GitHub private vulnerability reporting on the affected repository. Open the repository, go to the **Security** tab, and choose **Report a vulnerability**. If a repository does not offer this yet, open a public issue that says only "I have a security report" and asks for a private contact. Do not put details in it.
+
+Include:
+
+- which client and version is affected;
+- what you found and how to reproduce it;
+- the impact you expect.
+
+Use made-up data in your report. Never send real credentials, PINs or customer data.
+
+## What counts
+
+Examples of things to report:
+
+- A way to make a client sign or send data it should not.
+- A secret, PIN, `Authorization` header or `Digest` header that appears in a log or error message.
+- A webhook check that accepts a request it should reject.
+- A retry that could send a payment twice.
+
+## Problems with the Selcom API itself
+
+We do not run the gateway. Report problems with the API, your account or your credentials to Selcom through [the developer portal](https://developers.selcommobile.com/).
+
+## If you leaked a credential
+
+If a real API key, secret or PIN was committed or logged, contact Selcom to replace it. Removing it from git history is not enough.

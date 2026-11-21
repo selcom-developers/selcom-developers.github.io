@@ -1,28 +1,50 @@
-# Selcom Developers
+# Selcom Developers site
 
-Accept online payments today. Start growing your business with effortless payments.
+Source for <https://selcom-developers.github.io/>, the documentation site for the community clients of the Selcom API gateway.
 
+Not affiliated with Selcom Paytech Ltd.
 
-- Quick setup. Begin accepting payments in 15 minutes.
-- Modern technologies. Use latest and edge tested technologies.
-- All leading payment methods. The best localised experience.
+The site is built with [Nextra](https://nextra.site/) (docs theme) on Next.js, exported as static files, and deployed to GitHub Pages by GitHub Actions. Search uses Pagefind and works in the static export.
 
-## Trust
+## Run it locally
 
-Trusted by more than 100+ businesses. We create impact with Africas's easiest payments.
+You need Node.js 20.9 or later (CI uses Node 24).
 
-## Best in market
+```bash
+npm ci
+npm run dev      # development server at http://localhost:3000
+npm run build    # static export to out/, then builds the search index
+npm run serve    # serve out/ to check the export
+```
 
-The best East African payment experience for your customers. We care about the details, so you get the best conversion.
+Search only works after `npm run build`, because the index is built from the exported pages.
 
-## Life saver
+## Where things are
 
-Time-saving, money-making. Simply drop Selcom into your hosted webshop with one of our free plugins or build something yourself with our packages.
+| Path | What it is |
+|---|---|
+| `content/` | The pages, as MDX. Folders and `_meta.js` files set the sidebar and navigation |
+| `content/spec/` | Ported from [selcom-spec](https://github.com/selcom-developers/selcom-spec) at tag `v0.1.0` |
+| `content/clients/` | One page per client |
+| `app/` | Next.js layout and page routing |
+| `.github/workflows/pages.yml` | Build on every pull request, deploy on push to `main` |
 
-## Start today
+## Writing pages
 
-Create an account now. Start accepting payments on your website or app today. 
+- Use plain, clear English and short sentences.
+- Do not invent API details for the clients. Describe only what is published.
+- Use made-up data only: phones like `255700000001`, IDs like `ORD-1001`, keys like `test-key-0001`.
+- Each spec page links back to its source file at the spec tag. When the spec changes, update the pages and the tag together.
+- In MDX, escape `{` and `<` in normal text, or put them in code.
 
-## We love Open source
+## Deployment
 
-All intergration, libraries and plugins are open source with a permissive licence.
+Pushes to `main` deploy through the workflow. Pull requests build only. The repository's Pages source must be set to "GitHub Actions" (Settings, Pages).
+
+## Contributing
+
+See [Contributing](https://selcom-developers.github.io/community/contributing) on the site. Pull requests are welcome.
+
+## License
+
+[Apache License 2.0](LICENSE).

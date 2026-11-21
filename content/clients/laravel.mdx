@@ -1,0 +1,46 @@
+---
+title: Laravel client
+description: The community Laravel client for the Selcom API gateway. v1 in development, not yet published.
+---
+
+# Laravel client
+
+> **Status: v1 in development, not yet published.** Not affiliated with Selcom Paytech Ltd.
+
+The Laravel client is one of four community clients for the Selcom API gateway. Language: PHP (Laravel).
+
+Repository: [selcom-developers/laravel-selcom](https://github.com/selcom-developers/laravel-selcom)
+
+## Install
+
+**Available after the first release.** The package is not published yet. The install line will be added here when the first release is out. Until then, follow the [repository](https://github.com/selcom-developers/laravel-selcom) for progress.
+
+## What it follows
+
+The client is written to the [shared spec](/spec). Read these pages to understand how it behaves:
+
+- [Request signing](/spec/signing)
+- [API v1 operations](/spec/api-v1)
+- [Results and retries](/spec/results)
+- [Webhooks](/spec/webhooks)
+- [Client requirements](/spec/client-requirements)
+
+In short, a client that follows the spec:
+
+- needs an explicit environment (`sandbox` or `production`), with no default;
+- signs every request, and fails closed if signing fails;
+- never retries a payment or a write on its own;
+- returns one of five typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`;
+- verifies webhooks and treats them as hints, not proof.
+
+## Usage and API details
+
+This page does not show code samples yet. The API is still in development and may change before the first release. When the client is published, the README in the [repository](https://github.com/selcom-developers/laravel-selcom) is the place for install, quickstart and per-operation guidance.
+
+## Before you start
+
+You need credentials from Selcom. See [Credentials and environments](/getting-started).
+
+## Help and issues
+
+Found a problem, or want to help? Open an issue in the [repository](https://github.com/selcom-developers/laravel-selcom/issues), or read [Contributing](/community/contributing). For security problems, see [Security reporting](/community/security).

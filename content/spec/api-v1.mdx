@@ -1,0 +1,348 @@
+---
+description: The checkout and payout operations covered by v1.
+---
+
+# API scope for v1
+
+*Ported from [`docs/api-v1.md`](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/api-v1.md) at spec tag `v0.1.0`. The spec repository is the source of truth.*
+
+Version 1 of the community clients covers checkout and payouts: 16 operations plus the checkout webhook. Everything else on Selcom's developer portal (bank transfers, Selcom Pesa, agent cash-out, virtual cards, C2B collections, international transfers, POS) is out of scope for v1.
+
+This page describes each operation in our own words. Selcom's portal at [https://developers.selcommobile.com/](https://developers.selcommobile.com/) is the authority on the API; where it and this page disagree, the portal wins and this page should be fixed.
+
+## Conventions
+
+- **Base URLs.** Production `https://apigw.selcommobile.com`, sandbox `https://apigwtest.selcommobile.com`. Every path below starts with `/v1/`.
+- **Signing.** Every request is signed as in [signing.md](/spec/signing), including GETs and DELETEs.
+- **Parameters.** POST sends a flat JSON body; GET and DELETE send a query string. In the field tables, "yes" means required, "no" means optional.
+- **Money.** `amount` is a whole number of units of the currency. Payouts are in TZS and carry no currency field. Checkout orders carry `currency` explicitly.
+- **Identifiers.** `transid` and `order_id` are chosen by the merchant and must be unique per vendor. They are the idempotency keys: see [results.md](/spec/results#idempotency-and-retries).
+- **Response envelope.** Every response is a JSON object shaped like this:
+
+  ```json
+  {
+    "transid": "TXN-UTL-0001",
+    "reference": "REF0000000001",
+    "resultcode": "000",
+    "result": "SUCCESS",
+    "message": "Human-readable text, sometimes multi-line",
+    "data": []
+  }
+  ```
+
+  `transid` appears on payout responses. `data` is always an array; operations that return something put it in `data[0]` (or in several entries for lists). How to turn this into a status is in [results.md](/spec/results).
+
+## Operation kinds
+
+Each operation has a kind. The kind decides how its response is classified, which timeout profile it uses, and whether anything may ever be retried.
+
+| Kind | Meaning | Timeouts (connect / read) | Retried by the client? |
+|---|---|---|---|
+| `payment` | Moves money, or asks the buyer to approve a payment | 15 s / 180 s | Never |
+| `status-query` | Asks for the verdict on an earlier payout by `transid` | 10 s / 10 s | Only on a not-sent error, and only if the caller opted in |
+| `order-status` | Asks for the state of a checkout order | 10 s / 10 s | Only on a not-sent error, and only if the caller opted in |
+| `other` | Creates, cancels, lists, looks up or reads; moves no money | 10 s / 10 s | Only on a not-sent error, and only if the caller opted in; never for writes |
+
+"Writes" are create-order, create-order-minimal, cancel-order and delete-card. They move no money, but they are not idempotent, so the client never retries them.
+
+## Summary
+
+| Operation | Method | Path | Kind |
+|---|---|---|---|
+| `checkout.create-order` | POST | `/v1/checkout/create-order` | other (write) |
+| `checkout.create-order-minimal` | POST | `/v1/checkout/create-order-minimal` | other (write) |
+| `checkout.wallet-payment` | POST | `/v1/checkout/wallet-payment` | payment |
+| `checkout.card-payment` | POST | `/v1/checkout/card-payment` | payment |
+| `checkout.order-status` | GET | `/v1/checkout/order-status` | order-status |
+| `checkout.cancel-order` | DELETE | `/v1/checkout/cancel-order` | other (write) |
+| `checkout.list-orders` | GET | `/v1/checkout/list-orders` | other |
+| `checkout.stored-cards` | GET | `/v1/checkout/stored-cards` | other |
+| `checkout.delete-card` | DELETE | `/v1/checkout/delete-card` | other (write) |
+| `utilitypayment.process` | POST | `/v1/utilitypayment/process` | payment |
+| `utilitypayment.lookup` | GET | `/v1/utilitypayment/lookup` | other |
+| `utilitypayment.query` | GET | `/v1/utilitypayment/query` | status-query |
+| `walletcashin.process` | POST | `/v1/walletcashin/process` | payment |
+| `walletcashin.namelookup` | GET | `/v1/walletcashin/namelookup` | other |
+| `walletcashin.query` | GET | `/v1/walletcashin/query` | status-query |
+| `vendor.balance` | POST | `/v1/vendor/balance` | other |
+
+The operation names are the file names in `vectors/responses/`.
+
+---
+
+## Checkout
+
+Checkout takes payments from buyers. A merchant creates an **order**, then either sends the buyer to Selcom's hosted payment page, or pushes the payment directly (a USSD prompt to a mobile wallet, or a charge to a stored card). The result arrives by webhook ([webhooks.md](/spec/webhooks)) and is always confirmed with `order-status`.
+
+### `checkout.create-order`
+
+`POST /v1/checkout/create-order`
+
+Creates an order that can be paid by any method enabled for the vendor, including cards. The response gives a link to the hosted payment page. Card payments are refused if the billing details are missing, so send the full `billing` group for any order that may be paid by card.
+
+| Field | Required | Notes |
+|---|---|---|
+| `vendor` | yes | Merchant till or vendor ID issued by Selcom |
+| `order_id` | yes | Merchant's unique order ID |
+| `buyer_email` | yes | |
+| `buyer_name` | yes | Full name |
+| `buyer_userid` | no | The buyer's ID in the merchant's system; empty for guest checkout. Needed later for stored cards |
+| `buyer_phone` | yes | MSISDN in international form, `255...` |
+| `gateway_buyer_uuid` | no | Returned on the buyer's first order; send it on later orders so the page can offer the buyer's stored cards |
+| `amount` | yes | Whole units of `currency` |
+| `currency` | yes | `TZS` or `USD` |
+| `payment_methods` | yes | Comma-separated text from `ALL`, `MASTERPASS`, `CARD`, `MOBILEMONEYPULL`. A string, not an array |
+| `redirect_url` | no | **Base64** of the URL the buyer returns to after paying |
+| `cancel_url` | no | **Base64** of the URL the buyer returns to after cancelling |
+| `webhook` | no | **Base64** of the URL that receives the payment callback |
+| `billing.firstname`, `billing.lastname` | yes | |
+| `billing.address_1` | yes | |
+| `billing.address_2` | no | |
+| `billing.city`, `billing.state_or_region` | yes | |
+| `billing.postcode_or_pobox` | yes | |
+| `billing.country` | yes | ISO 3166-1 alpha-2, for example `TZ` |
+| `billing.phone` | yes | |
+| `shipping.*` | no | Same sub-fields as `billing` |
+| `buyer_remarks`, `merchant_remarks` | no | Free text |
+| `no_of_items` | yes | Number of items in the order |
+| `header_colour`, `link_colour`, `button_colour` | no | Hex colours for the hosted page, for example `#FF0012` |
+| `expiry` | no | Minutes until the order expires |
+
+The `billing` and `shipping` groups can be passed nested or already flat. Either way they are signed and sent as dotted keys.
+
+**Response.** `data[0]` holds `gateway_buyer_uuid` (keep it with the buyer), `payment_token` (a code the buyer can pay with), `qr`, and `payment_gateway_url`, which is **base64**-encoded. Clients decode it for the caller and keep the raw value too.
+
+### `checkout.create-order-minimal`
+
+`POST /v1/checkout/create-order-minimal`
+
+Creates an order for non-card payment: mobile-wallet push, or a token or QR code the buyer pays with. Cards are not offered for these orders. This is the first step of a USSD push payment; the second is `checkout.wallet-payment`.
+
+| Field | Required | Notes |
+|---|---|---|
+| `vendor`, `order_id` | yes | As for create-order |
+| `buyer_email`, `buyer_name`, `buyer_phone` | yes | |
+| `amount`, `currency` | yes | |
+| `redirect_url`, `cancel_url`, `webhook` | no | **Base64**-encoded URLs |
+| `buyer_remarks`, `merchant_remarks` | no | |
+| `no_of_items` | yes | |
+| `header_colour`, `link_colour`, `button_colour`, `expiry` | no | |
+
+**Response.** As for create-order: `gateway_buyer_uuid`, `payment_token`, `qr`, base64 `payment_gateway_url`.
+
+### `checkout.wallet-payment`
+
+`POST /v1/checkout/wallet-payment`
+
+Pushes a USSD payment prompt to the buyer's mobile wallet for an existing order. The buyer approves it on the phone with their wallet PIN. Money-moving: never retried.
+
+| Field | Required | Notes |
+|---|---|---|
+| `transid` | yes | Merchant's unique ID for this payment attempt |
+| `order_id` | yes | An order created with create-order-minimal (or create-order) |
+| `msisdn` | yes | The wallet to charge, `255...` |
+
+**Response.** Normally `111`: the prompt was sent and the buyer has not answered yet. The outcome arrives by webhook and is confirmed with `order-status`. If this call fails outright (a not-sent error, or a `FAILED` status), the merchant SHOULD cancel the order on a best-effort basis so it cannot be paid later by surprise.
+
+### `checkout.card-payment`
+
+`POST /v1/checkout/card-payment`
+
+Charges a stored card for an existing order without sending the buyer to the payment page, for in-app payments and recurring charges. Money-moving: never retried.
+
+| Field | Required | Notes |
+|---|---|---|
+| `transid` | yes | Merchant's unique ID for this payment attempt |
+| `vendor` | yes | |
+| `order_id` | yes | |
+| `card_token` | yes | From `checkout.stored-cards` |
+| `buyer_userid` | yes | Same value as on the buyer's orders |
+| `gateway_buyer_uuid` | yes | From the buyer's first order |
+
+**Response.** Normally `111`; the outcome arrives by webhook and is confirmed with `order-status`.
+
+### `checkout.order-status`
+
+`GET /v1/checkout/order-status?order_id=…`
+
+Returns the state of one order. This is the source of truth for checkout: webhooks and push responses are only hints until this confirms them.
+
+| Field | Required | Notes |
+|---|---|---|
+| `order_id` | yes | |
+
+**Response.** `data[0]` describes the order: `order_id`, `creation_date`, `amount`, `payment_status`, and, once the order is paid, `transid`, `channel` (for example a wallet name), `reference`, and the payer's number (published as `msisdn`, seen as `phone` in samples: accept either). The top-level `resultcode` says only whether the *query* worked; the payment verdict is `payment_status`. Mapping: [results.md](/spec/results#order-status).
+
+### `checkout.cancel-order`
+
+`DELETE /v1/checkout/cancel-order?order_id=…`
+
+Cancels an order that has not been paid. Paid or expired orders cannot be cancelled. A successful cancel is therefore proof that the order was not paid and never will be, which makes it the safe way to close an order as failed.
+
+| Field | Required | Notes |
+|---|---|---|
+| `order_id` | yes | |
+
+**Response.** `000` with an empty `data` on success. A failure can mean the order was already paid: check `order-status` before treating it as unpaid.
+
+### `checkout.list-orders`
+
+`GET /v1/checkout/list-orders?fromdate=…&todate=…`
+
+Lists the vendor's orders created in a date range. Useful for reconciliation.
+
+| Field | Required | Notes |
+|---|---|---|
+| `fromdate` | yes | `YYYY-MM-DD` |
+| `todate` | yes | `YYYY-MM-DD` |
+
+**Response.** One `data` entry per order with `order_id`, `creation_date`, `amount` and `payment_status`. Map each `payment_status` as for order-status.
+
+### `checkout.stored-cards`
+
+`GET /v1/checkout/stored-cards?gateway_buyer_uuid=…&buyer_userid=…`
+
+Lists the cards the gateway has stored for a buyer.
+
+| Field | Required | Notes |
+|---|---|---|
+| `gateway_buyer_uuid` | yes | |
+| `buyer_userid` | yes | Same value as on the buyer's orders |
+
+**Response.** One `data` entry per card: `id` (the card's resource ID, used to delete it), `masked_card`, `creation_date`, `name` (cardholder), `card_type` (`001` Visa, `002` Mastercard) and `card_token` (used to charge it). Card tokens are sensitive; never log them in full.
+
+### `checkout.delete-card`
+
+`DELETE /v1/checkout/delete-card?id=…&gateway_buyer_uuid=…`
+
+Removes a stored card.
+
+| Field | Required | Notes |
+|---|---|---|
+| `id` | yes | The card's resource ID from stored-cards |
+| `gateway_buyer_uuid` | yes | |
+
+**Response.** `000` with an empty `data` on success.
+
+---
+
+## Payouts
+
+Payouts spend from the merchant's **float account** at Selcom: paying bills and buying prepaid services, or crediting a mobile wallet. Each payout is authorised with the float account's `vendor` and `pin`. The PIN is a secret: it is signed and sent like any other field, and never logged.
+
+### `utilitypayment.process`
+
+`POST /v1/utilitypayment/process`
+
+Pays a bill or buys a prepaid service (electricity tokens, airtime, TV, internet, government bills and others) from the float. Money-moving: never retried.
+
+| Field | Required | Notes |
+|---|---|---|
+| `transid` | yes | Merchant's unique ID; also the key for the status query |
+| `utilitycode` | yes | Which service, for example `LUKU` (prepaid electricity) or `TOP` (airtime). The full list is on the portal |
+| `utilityref` | yes | The customer's reference at that service: meter number, phone number, control number and so on |
+| `amount` | yes | Whole TZS |
+| `vendor` | yes | Float account ID |
+| `pin` | yes | Float account PIN |
+| `msisdn` | no | The end customer's phone number |
+
+**Response.** `000` when the payment completed; `data` may carry a receipt or token. `111`, `927` and `999` are settled with `utilitypayment.query` after 3 minutes or more.
+
+### `utilitypayment.lookup`
+
+`GET /v1/utilitypayment/lookup?utilitycode=…&utilityref=…&transid=…`
+
+Checks a customer reference before paying and returns who it belongs to (and, for bills, the amount due). Not every utility code supports lookup.
+
+| Field | Required | Notes |
+|---|---|---|
+| `utilitycode` | yes | |
+| `utilityref` | yes | |
+| `transid` | yes | A unique ID. The same `transid` may then be used for the payment that follows |
+
+**Response.** `data[0]` has at least `name`; bill lookups may add `amount`, `institution`, `type` and `desc`.
+
+### `utilitypayment.query`
+
+`GET /v1/utilitypayment/query?transid=…`
+
+Returns the verdict on an earlier `utilitypayment.process`.
+
+| Field | Required | Notes |
+|---|---|---|
+| `transid` | yes | The `transid` of the payment |
+
+**Response.** The `resultcode` is the verdict on the payment. `404` means the gateway never recorded that `transid`. `data` may hold a `receipt` for successful payments.
+
+### `walletcashin.process`
+
+`POST /v1/walletcashin/process`
+
+Credits a mobile wallet from the float. Money-moving: never retried.
+
+| Field | Required | Notes |
+|---|---|---|
+| `transid` | yes | Merchant's unique ID |
+| `utilitycode` | yes | The destination wallet, for example `VMCASHIN`, `AMCASHIN`, `TPCASHIN`, `EZCASHIN`, `HPCASHIN`, `TTCASHIN`; or `CASHIN` to let the gateway route by the number's current network |
+| `utilityref` | yes | The receiving wallet's phone number |
+| `amount` | yes | Whole TZS |
+| `vendor` | yes | Float account ID |
+| `pin` | yes | Float account PIN |
+| `msisdn` | no | The sender's or initiator's phone number |
+
+**Response.** As for utility payments; settle non-final results with `walletcashin.query`.
+
+### `walletcashin.namelookup`
+
+`GET /v1/walletcashin/namelookup?utilitycode=…&utilityref=…&transid=…`
+
+Returns the registered name on a wallet before sending money to it. Not every wallet code supports lookup.
+
+| Field | Required | Notes |
+|---|---|---|
+| `utilitycode` | yes | |
+| `utilityref` | yes | The wallet's phone number |
+| `transid` | yes | A unique ID; may be reused for the cash-in that follows |
+
+**Response.** `data[0].name`.
+
+### `walletcashin.query`
+
+`GET /v1/walletcashin/query?transid=…`
+
+Returns the verdict on an earlier `walletcashin.process`. Same rules as `utilitypayment.query`.
+
+| Field | Required | Notes |
+|---|---|---|
+| `transid` | yes | |
+
+### `vendor.balance`
+
+`POST /v1/vendor/balance`
+
+Returns the float account balance. A POST because it carries the PIN, but it moves no money.
+
+| Field | Required | Notes |
+|---|---|---|
+| `vendor` | yes | Float account ID |
+| `pin` | yes | Float account PIN |
+| `transid` | yes | A unique ID |
+
+**Response.** `data[0].balance`, a string of whole shillings.
+
+---
+
+## Differences in the published samples
+
+Selcom's samples and parameter tables do not always agree. These notes follow the parameter tables:
+
+- `buyer_userid`, not `buyer_user_id`; `buyer_remarks`, not `payer_remarks`.
+- Some sample `Signed-Fields` headers list fields that the sample body does not contain, or contain spaces after commas. Build `Signed-Fields` from what you actually send.
+- One sample sends `webhook` as a plain URL. The tables say base64; use base64.
+- The order-status table calls the payer's number `msisdn`; the sample calls it `phone`.
+- Sample `Timestamp` comments describe other formats; the format in [signing.md](/spec/signing#timestamp) is the one to use.
+
+## Open questions
+
+- The maximum length and allowed characters of `transid` and `order_id` are not published. Until they are, clients SHOULD keep IDs to 30 characters or fewer, using `A-Z a-z 0-9 -`.
+- Whether `USD` checkout amounts may have cents is not published. Clients accept whole units only.
