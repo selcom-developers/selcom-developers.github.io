@@ -167,7 +167,8 @@
 /* (unlayered on purpose: it must win over Nextra's layered styles)    */
 /* ------------------------------------------------------------------ */
 
-:focus-visible {
+:focus-visible,
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   box-shadow: none;
