@@ -66,7 +66,7 @@ if (order.status() == Status.SUCCESS) {
 Result<Responses.OrderStatusData> status = client.orderStatus(new Requests.OrderStatus("ORD-1001"));
 ```
 
-The environment is required and has no default. Every method returns a `Result` with one of five statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
+The environment is required and has no default. Every method returns a `Result` with one of the typed statuses: `SUCCESS`, `PENDING`, `AMBIGUOUS`, `FAILED` or `NOT_FOUND`.
 
 The [README](https://github.com/selcom-developers/selcom4j#readme) covers configuration, every operation, error handling, idempotency, webhooks and using each layer on its own.
 
@@ -76,7 +76,7 @@ The client follows the [shared spec](/spec). These pages explain what it does:
 
 <LinkCards>
   <LinkCard href="/spec/signing" title="Request signing">How every request is signed, with worked examples.</LinkCard>
-  <LinkCard href="/spec/results" title="Results and retries">The five typed statuses, idempotency and when to query.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">The typed statuses, idempotency and when to query.</LinkCard>
   <LinkCard href="/spec/webhooks" title="Webhooks">Verify a delivery, then confirm it with order status.</LinkCard>
   <LinkCard href="/spec/client-requirements" title="Client requirements">What every client does, in every language.</LinkCard>
 </LinkCards>

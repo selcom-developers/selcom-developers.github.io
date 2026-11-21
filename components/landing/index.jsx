@@ -156,7 +156,7 @@ export async function Landing() {
       <Section
         id="same-spec"
         title="Same spec, multiple languages"
-        lead="The clients differ in idiom, not in behaviour. They take the same settings, return the same five statuses and pass the same test vectors."
+        lead="The clients differ in idiom, not in behaviour. They take the same settings, return the same typed statuses and pass the same test vectors."
       >
         <SameSpec />
       </Section>

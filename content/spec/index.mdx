@@ -17,8 +17,8 @@ The spec is not affiliated with, endorsed by or supported by Selcom Paytech Ltd.
 
 <LinkCards>
   <LinkCard href="/spec/signing" title="Request signing">The exact signing algorithm, with worked examples and pitfalls.</LinkCard>
-  <LinkCard href="/spec/api-v1" title="API v1 operations">Checkout and payouts: 16 operations plus the webhook.</LinkCard>
-  <LinkCard href="/spec/results" title="Results and retries">Result codes, the five typed statuses, idempotency.</LinkCard>
+  <LinkCard href="/spec/api-v1" title="API v1 operations">Checkout and payouts, plus the webhook.</LinkCard>
+  <LinkCard href="/spec/results" title="Results and retries">Result codes, the typed statuses, idempotency.</LinkCard>
   <LinkCard href="/spec/webhooks" title="Webhooks">Verifying and handling checkout webhooks.</LinkCard>
   <LinkCard href="/spec/client-requirements" title="Client requirements">What every client must do.</LinkCard>
 </LinkCards>
@@ -27,8 +27,8 @@ The spec is not affiliated with, endorsed by or supported by Selcom Paytech Ltd.
 
 The spec ships test vectors that every client must pass:
 
-- `vectors/signing.json`: 20 signing cases and 11 rejects.
-- `vectors/responses/`: 120 response scenarios across the 16 operations, and 15 webhook samples.
+- `vectors/signing.json`: signing cases and cases that must be rejected.
+- `vectors/responses/`: response scenarios for every operation, and webhook samples.
 - `tools/`: the Python reference implementation that generates them.
 
 All credentials in the vectors are sample values or made up. None of them works against the gateway.
