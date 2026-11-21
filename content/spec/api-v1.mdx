@@ -11,10 +11,10 @@ This page describes each operation in our own words. Selcom's portal at [https:/
 ## Conventions
 
 - **Base URLs.** Production `https://apigw.selcommobile.com`, sandbox `https://apigwtest.selcommobile.com`. Every path below starts with `/v1/`.
-- **Signing.** Every request is signed as in [signing.md](/spec/signing), including GETs and DELETEs.
+- **Signing.** Every request is signed as in [Request signing](/spec/signing), including GETs and DELETEs.
 - **Parameters.** POST sends a flat JSON body; GET and DELETE send a query string. In the field tables, "yes" means required, "no" means optional.
 - **Money.** `amount` is a whole number of units of the currency. Payouts are in TZS and carry no currency field. Checkout orders carry `currency` explicitly.
-- **Identifiers.** `transid` and `order_id` are chosen by the merchant and must be unique per vendor. They are the idempotency keys: see [results.md](/spec/results#idempotency-and-retries).
+- **Identifiers.** `transid` and `order_id` are chosen by the merchant and must be unique per vendor. They are the idempotency keys: see [Results and retries](/spec/results#idempotency-and-retries).
 - **Response envelope.** Every response is a JSON object shaped like this:
 
   ```json
@@ -28,7 +28,7 @@ This page describes each operation in our own words. Selcom's portal at [https:/
   }
   ```
 
-  `transid` appears on payout responses. `data` is always an array; operations that return something put it in `data[0]` (or in several entries for lists). How to turn this into a status is in [results.md](/spec/results).
+  `transid` appears on payout responses. `data` is always an array; operations that return something put it in `data[0]` (or in several entries for lists). How to turn this into a status is in [Results and retries](/spec/results).
 
 ## Operation kinds
 
@@ -70,7 +70,7 @@ The operation names are the file names in `vectors/responses/`.
 
 ## Checkout
 
-Checkout takes payments from buyers. A merchant creates an **order**, then either sends the buyer to Selcom's hosted payment page, or pushes the payment directly (a USSD prompt to a mobile wallet, or a charge to a stored card). The result arrives by webhook ([webhooks.md](/spec/webhooks)) and is always confirmed with `order-status`.
+Checkout takes payments from buyers. A merchant creates an **order**, then either sends the buyer to Selcom's hosted payment page, or pushes the payment directly (a USSD prompt to a mobile wallet, or a charge to a stored card). The result arrives by webhook ([Webhooks](/spec/webhooks)) and is always confirmed with `order-status`.
 
 ### `checkout.create-order`
 
@@ -169,7 +169,7 @@ Returns the state of one order. This is the source of truth for checkout: webhoo
 |---|---|---|
 | `order_id` | yes | |
 
-**Response.** `data[0]` describes the order: `order_id`, `creation_date`, `amount`, `payment_status`, and, once the order is paid, `transid`, `channel` (for example a wallet name), `reference`, and the payer's number (published as `msisdn`, seen as `phone` in samples: accept either). The top-level `resultcode` says only whether the *query* worked; the payment verdict is `payment_status`. Mapping: [results.md](/spec/results#order-status).
+**Response.** `data[0]` describes the order: `order_id`, `creation_date`, `amount`, `payment_status`, and, once the order is paid, `transid`, `channel` (for example a wallet name), `reference`, and the payer's number (published as `msisdn`, seen as `phone` in samples: accept either). The top-level `resultcode` says only whether the *query* worked; the payment verdict is `payment_status`. Mapping: [Results and retries](/spec/results#order-status).
 
 ### `checkout.cancel-order`
 
@@ -338,7 +338,7 @@ Selcom's samples and parameter tables do not always agree. These notes follow th
 - Some sample `Signed-Fields` headers list fields that the sample body does not contain, or contain spaces after commas. Build `Signed-Fields` from what you actually send.
 - One sample sends `webhook` as a plain URL. The tables say base64; use base64.
 - The order-status table calls the payer's number `msisdn`; the sample calls it `phone`.
-- Sample `Timestamp` comments describe other formats; the format in [signing.md](/spec/signing#timestamp) is the one to use.
+- Sample `Timestamp` comments describe other formats; the format in [Request signing](/spec/signing#timestamp) is the one to use.
 
 ## Open questions
 

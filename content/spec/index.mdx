@@ -5,7 +5,7 @@ description: The shared rules and test vectors that every community Selcom clien
 
 # Spec
 
-The spec is the shared source of truth for all four clients: the rules, worked examples and test vectors. This section is the spec at version `0.1.0`.
+The spec is the shared source of truth for all four clients: the rules, worked examples and test vectors. This section is the spec at version `0.2.1`.
 
 If a client and the spec disagree, the client is wrong, or the spec needs a fix that every client then picks up.
 
@@ -26,7 +26,7 @@ If a client and the spec disagree, the client is wrong, or the spec needs a fix 
 The spec ships test vectors that every client must pass:
 
 - `vectors/signing.json`: 20 signing cases and 11 rejects.
-- `vectors/responses/`: 120 response scenarios across the 16 operations, and 11 webhook samples.
+- `vectors/responses/`: 120 response scenarios across the 16 operations, and 15 webhook samples.
 - `tools/`: the Python reference implementation that generates them.
 
 All credentials in the vectors are sample values or made up. None of them works against the gateway.

@@ -47,7 +47,7 @@ If the HTTP library cannot tell which case it is, the answer is `UNKNOWN_OUTCOME
 
 - Transport errors MUST NOT be disguised as gateway responses, and MUST NOT become a `FAILED` status.
 - The client MUST NOT retry `payment` operations or writes, whatever the error. For other operations it MAY retry a `NOT_SENT` error, only if the caller opted in, with the same parameters and a fresh timestamp.
-- A response that did arrive but carries no verdict (an HTML error page, an empty body) is not a transport error; it is classified as in [results.md](/spec/results#classification).
+- A response that did arrive but carries no verdict (an HTML error page, an empty body) is not a transport error; it is classified as in [Results and retries](/spec/results#classification).
 
 ## Money
 
@@ -74,7 +74,7 @@ If the HTTP library cannot tell which case it is, the answer is `UNKNOWN_OUTCOME
 
 ## Signing
 
-- Signing follows [signing.md](/spec/signing) exactly and is behind a pluggable signer interface: HS256 now, RS256 to come without changes elsewhere.
+- Signing follows [Request signing](/spec/signing) exactly and is behind a pluggable signer interface: HS256 now, RS256 to come without changes elsewhere.
 - Each client exposes a pure signing function (no I/O, no clock) so that `vectors/signing.json` can be run against it.
 - The timestamp comes from an injectable clock.
 - The client fails closed: on any signing error, nothing is sent.
@@ -83,9 +83,9 @@ If the HTTP library cannot tell which case it is, the answer is `UNKNOWN_OUTCOME
 
 - One method per v1 operation, named after it (`createOrder`, `walletPayment`, `orderStatus`, `utilityPayment`, `utilityQuery`, and so on, in each language's style).
 - Submitting and querying are separate methods. Nothing hides a query inside a submit.
-- Every method returns the result object from [results.md](/spec/results#the-result-object): the typed status, the code and text, the HTTP status, the decoded data and the raw body.
+- Every method returns the result object from [Results and retries](/spec/results#the-result-object): the typed status, the code and text, the HTTP status, the decoded data and the raw body.
 - The HTTP transport is injectable (PSR-18 in PHP, `fetch` in Node, `java.net.http.HttpClient` or an interface over it in Java) so that tests can run without a network.
-- Webhook support: `verify(headers, rawBody)` returning the verdicts in [webhooks.md](/spec/webhooks#verification), and an amount parser. The Laravel package adds a route, middleware and an event, and follows the handling steps in that page.
+- Webhook support: `verify(headers, rawBody)` returning the verdicts in [Webhooks](/spec/webhooks#verification), and an amount parser. The Laravel package adds a route, middleware and an event, and follows the handling steps in that page.
 - Clients SHOULD send a `User-Agent` naming the client and its version, for example `selcom-node/0.1.0`.
 
 ## Concurrency is the caller's job
@@ -94,7 +94,7 @@ The client is stateless between calls; it does not lock, queue or deduplicate. E
 
 - Persist the `transid` or `order_id`, with a "submitting" state, before calling the gateway. After a crash, reconcile anything left in that state by querying.
 - Put a unique constraint on the ID, so that a retried job cannot create a second transaction.
-- Apply results under a row lock or with a compare-and-set, behind the final-state guard in [webhooks.md](/spec/webhooks#final-state-guard).
+- Apply results under a row lock or with a compare-and-set, behind the final-state guard in [Webhooks](/spec/webhooks#final-state-guard).
 
 ## Tests
 

@@ -28,7 +28,7 @@ The HTTP status does not decide the verdict: business errors come back in the bo
 
 | Status | Meaning | Final? | What the caller may do |
 |---|---|---|---|
-| `SUCCESS` | It happened | yes | Fulfil, after confirming (see [webhooks.md](/spec/webhooks)) |
+| `SUCCESS` | It happened | yes | Fulfil, after confirming (see [Webhooks](/spec/webhooks)) |
 | `PENDING` | Accepted, still processing | no | Wait for the webhook, or query after 3 minutes or more |
 | `AMBIGUOUS` | Nobody knows yet | no | Query after 3 minutes or more. Never resubmit |
 | `FAILED` | It did not happen | yes | Report the failure. A new attempt is a new transaction with a new ID, and it is the caller's decision, never the client's |
@@ -38,7 +38,7 @@ Every client returns these five names, spelled exactly like this, from every ope
 
 ## Classification
 
-Inputs: the operation's kind ([api-v1.md](/spec/api-v1#operation-kinds)) and the response body. Apply the first rule that matches.
+Inputs: the operation's kind ([API v1 operations](/spec/api-v1#operation-kinds)) and the response body. Apply the first rule that matches.
 
 1. **No verdict.** The body is not a JSON object, or has no usable `resultcode` (an HTML error page from a proxy, an empty body, a truncated response).
    - `payment`, `status-query`, `order-status`: **`AMBIGUOUS`**. Something answered, but not with a verdict, so the money may have moved.
@@ -53,7 +53,7 @@ Inputs: the operation's kind ([api-v1.md](/spec/api-v1#operation-kinds)) and the
 
 A `404` from an operation that is not a status query (a lookup, a create, a cancel) is an ordinary failure, not `NOT_FOUND`.
 
-No response at all (a timeout, a reset connection) is not classified here. It is a transport error, raised as described in [client-requirements.md](/spec/client-requirements#transport-errors). For money-moving operations the caller treats an unknown-outcome error exactly like `AMBIGUOUS`.
+No response at all (a timeout, a reset connection) is not classified here. It is a transport error, raised as described in [Client requirements](/spec/client-requirements#transport-errors). For money-moving operations the caller treats an unknown-outcome error exactly like `AMBIGUOUS`.
 
 ## Order status
 
@@ -89,7 +89,7 @@ A `FAILED` here describes the latest attempt. An order that has not expired can 
 
 **Resubmit the same ID only after `NOT_FOUND`.** If the status query says the gateway never recorded the `transid`, the original request did not arrive, and sending it again with the same `transid` is safe: if it did arrive in the meantime, the gateway refuses the duplicate.
 
-**Not-sent transport errors** (the request provably never left: DNS failure, connection refused) are safe to repeat with the same ID. For read-only operations the client may repeat them itself, if the caller opted in. For payments and writes the client raises the error and the caller decides whether to send again with the same ID. See [client-requirements.md](/spec/client-requirements#transport-errors).
+**Not-sent transport errors** (the request provably never left: DNS failure, connection refused) are safe to repeat with the same ID. For read-only operations the client may repeat them itself, if the caller opted in. For payments and writes the client raises the error and the caller decides whether to send again with the same ID. See [Client requirements](/spec/client-requirements#transport-errors).
 
 **Generate IDs deterministically** from the merchant's own records (for example the payout row's primary key with a prefix), so that a crash and restart produces the same ID rather than a new one. Persist the ID before sending the request.
 
