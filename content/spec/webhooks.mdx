@@ -4,9 +4,6 @@ description: Verifying and handling checkout webhooks.
 
 # Checkout webhooks
 
-*Ported from [`docs/webhooks.md`](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/webhooks.md) at spec tag `v0.1.0`. The spec repository is the source of truth.*
-
-
 When a checkout payment completes, the gateway calls the URL the merchant gave as `webhook` (base64-encoded) on the order. This page is how every client helps the merchant handle that call. `verify_webhook()` in `tools/selcom_reference.py` is the executable version of the verification step, and `vectors/responses/checkout.webhook.json` holds samples.
 
 **The one rule that matters most: a webhook is a hint, not proof.** Never fulfil an order because a webhook said so. Confirm with `checkout.order-status` first, every time.
@@ -44,7 +41,7 @@ Selcom's documentation shows the webhook carrying the same signing headers as AP
 
 Clients ship `verify(headers, rawBody) -> Verdict`, configured with the secret, a clock and a replay store.
 
-1. If there is no `Digest` header: **`UNSIGNED`**. There is nothing to check; the order-status confirmation is the only protection.
+1. If there is no `Digest` header: **`UNSIGNED`**. Confirm it with order-status, as for every delivery.
 2. If `Digest` is present but empty, or `Digest-Method` is not a method the client is configured for: **`INVALID`**.
 3. If `Timestamp` does not match the format in [signing.md](/spec/signing#timestamp), or the body is not a JSON object, or `Signed-Fields` is empty: **`INVALID`**.
 4. For each name in `Signed-Fields`, in order, take the value from the body (a dotted name may also be found by walking nested objects). If any is missing: **`INVALID`**. Normalise the values exactly as for requests.
@@ -61,7 +58,7 @@ Clients ship `verify(headers, rawBody) -> Verdict`, configured with the secret, 
 | `INVALID` | 401 | No. Log it, redacted |
 | `STALE` | 401 | No. Log it, redacted |
 
-`VALID` vouches only for the fields named in `Signed-Fields`. Anything else in the body, the amount included, may have been changed in transit without breaking the signature (sample `unsigned-field-changed`). That is one more reason to take the facts from order-status.
+`VALID` covers only the fields named in `Signed-Fields`. Take the amount, and every other fact you act on, from order-status.
 
 The replay store needs to hold digests only for the length of the window. A cache with a time-to-live is enough; the deduplication in step 3 of the handling is the durable guard.
 
@@ -96,7 +93,7 @@ Webhooks can be lost. A merchant waiting on an order that has no final status SH
 
 - Send the webhook URL on every order as `webhook`, base64-encoded (the base64 text is what is signed).
 - Use HTTPS.
-- Put an unguessable token in the path, for example `/selcom/webhook/<random>`. It filters out noise; it is not a substitute for order-status confirmation.
+- Put an unguessable token in the path, for example `/selcom/webhook/<random>`. It does not replace order-status confirmation.
 
 ## Samples
 

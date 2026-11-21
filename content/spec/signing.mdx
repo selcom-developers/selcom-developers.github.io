@@ -4,9 +4,6 @@ description: How every request to the gateway is signed, with a worked example.
 
 # Request signing
 
-*Ported from [`docs/signing.md`](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/signing.md) at spec tag `v0.1.0`. The spec repository is the source of truth.*
-
-
 Every request to the Selcom API gateway is signed: GET and DELETE as well as POST. This page is the exact algorithm that all community clients implement. `tools/selcom_reference.py` is the executable version, and `vectors/signing.json` holds the cases that every client must reproduce byte for byte.
 
 The key words MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119.
@@ -63,7 +60,7 @@ The string `"8000"` and the integer `8000` sign identically. Only the body diffe
 
 ### Keys
 
-A flattened key is one or more segments of `A-Z a-z 0-9 _ -` joined by `.`. A key with any other character (a comma would corrupt `Signed-Fields`; `&` or `=` would make the signing string ambiguous) is rejected. A key that appears twice after flattening (`billing.firstname` given both flat and nested) is rejected. Callers may pass dotted keys already flat; the result is the same as passing the nested object (vector `flat-dotted-key-same-as-nested`).
+A flattened key is one or more segments of `A-Z a-z 0-9 _ -` joined by `.`. A key with any other character is rejected. A key that appears twice after flattening (`billing.firstname` given both flat and nested) is rejected. Callers may pass dotted keys already flat; the result is the same as passing the nested object (vector `flat-dotted-key-same-as-nested`).
 
 ### Timestamp
 

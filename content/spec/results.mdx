@@ -4,8 +4,6 @@ description: Result codes, typed statuses, idempotency and retries.
 
 # Results, statuses and retries
 
-*Ported from [`docs/results.md`](https://github.com/selcom-developers/selcom-spec/blob/v0.1.0/docs/results.md) at spec tag `v0.1.0`. The spec repository is the source of truth.*
-
 Every client turns a gateway response into one of five typed statuses. Getting this wrong costs real money: reading "in progress" or "unknown" as "failed", then trying again under a new ID, pays the same person twice. This page is the rule; `classify()` in `tools/selcom_reference.py` is the executable version, and `vectors/responses/` holds the cases.
 
 ## Result codes
