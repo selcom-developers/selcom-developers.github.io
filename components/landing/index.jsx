@@ -23,6 +23,7 @@ const installs = [
 </dependency>`
   },
   { value: 'node', label: 'Node.js', registry: 'npm', runtime: 'Node 20 or later', href: '/clients/node', lang: 'bash', code: 'npm i @selcom-developers/selcom' },
+  { value: 'python', label: 'Python', registry: 'PyPI', runtime: 'Python 3.10 or later', href: '/clients/python', lang: 'bash', code: 'pip install selcompy' },
   { value: 'php', label: 'PHP', registry: 'Packagist', runtime: 'PHP 8.2 or later', href: '/clients/php', lang: 'bash', code: 'composer require selcom-developers/selcom-php' },
   {
     value: 'laravel',

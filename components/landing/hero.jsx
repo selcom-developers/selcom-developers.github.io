@@ -6,6 +6,7 @@ import { Stamp } from './stamp'
 const clients = [
   { href: '/clients/java', label: 'Java' },
   { href: '/clients/node', label: 'Node.js' },
+  { href: '/clients/python', label: 'Python' },
   { href: '/clients/php', label: 'PHP' },
   { href: '/clients/laravel', label: 'Laravel' }
 ]
@@ -65,7 +66,7 @@ export function Hero() {
           Call the Selcom API without paying anyone twice.
         </h1>
         <p className="mt-6 max-w-[54ch] text-lg leading-relaxed text-ink-soft">
-          Open-source clients for Java, Node.js, PHP and Laravel, built from one shared spec. Every
+          Open-source clients for Java, Node.js, Python, PHP and Laravel, built from one shared spec. Every
           request is signed, every outcome has a typed status, and no payment is ever retried
           behind your back.
         </p>

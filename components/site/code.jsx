@@ -7,7 +7,7 @@ let highlighter
 function getHighlighter() {
   highlighter ??= createHighlighter({
     themes: [lightTheme, darkTheme],
-    langs: ['js', 'ts', 'java', 'php', 'xml', 'bash', 'http']
+    langs: ['js', 'ts', 'java', 'php', 'python', 'xml', 'bash', 'http']
   })
   return highlighter
 }

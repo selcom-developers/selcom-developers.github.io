@@ -45,7 +45,7 @@ export const metadata = {
     template: '%s | Selcom Developers'
   },
   description:
-    'Open-source community clients for the Selcom payment API in Java, Node.js, PHP and Laravel. Not affiliated with Selcom Paytech Ltd.'
+    'Open-source community clients for the Selcom payment API in Java, Node.js, Python, PHP and Laravel. Not affiliated with Selcom Paytech Ltd.'
 }
 
 const navbar = (

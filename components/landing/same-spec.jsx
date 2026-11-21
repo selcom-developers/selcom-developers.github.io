@@ -22,6 +22,16 @@ if (status.status() == Status.SUCCESS) { /* fulfil */ }`
 if (status.status === "SUCCESS") { /* fulfil */ }`
   },
   {
+    name: 'Python',
+    href: '/clients/python',
+    runtime: 'Python 3.10 or later',
+    pkg: 'selcompy',
+    lang: 'python',
+    code: `status = client.order_status("ORD-1001")
+if status.status is Status.SUCCESS:
+    ...  # fulfil`
+  },
+  {
     name: 'PHP',
     href: '/clients/php',
     runtime: 'PHP 8.2 or later',

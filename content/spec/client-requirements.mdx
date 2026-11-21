@@ -4,7 +4,7 @@ description: What every community client must do.
 
 # What every client must do
 
-The Java, Node/TypeScript, PHP and Laravel clients differ in idiom, not in behaviour. This is the checklist they are reviewed against. MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119.
+The Java, Node/TypeScript, Python, PHP and Laravel clients differ in idiom, not in behaviour. This is the checklist they are reviewed against. MUST, MUST NOT, SHOULD and MAY are used as in RFC 2119.
 
 ## Configuration and environments
 
@@ -84,7 +84,7 @@ If the HTTP library cannot tell which case it is, the answer is `UNKNOWN_OUTCOME
 - One method per v1 operation, named after it (`createOrder`, `walletPayment`, `orderStatus`, `utilityPayment`, `utilityQuery`, and so on, in each language's style).
 - Submitting and querying are separate methods. Nothing hides a query inside a submit.
 - Every method returns the result object from [Results and retries](/spec/results#the-result-object): the typed status, the code and text, the HTTP status, the decoded data and the raw body.
-- The HTTP transport is injectable (PSR-18 in PHP, `fetch` in Node, `java.net.http.HttpClient` or an interface over it in Java) so that tests can run without a network.
+- The HTTP transport is injectable (PSR-18 in PHP, `fetch` in Node, `httpx` transports in Python, `java.net.http.HttpClient` or an interface over it in Java) so that tests can run without a network.
 - Webhook support: `verify(headers, rawBody)` returning the verdicts in [Webhooks](/spec/webhooks#verification), and an amount parser. The Laravel package adds a route, middleware and an event, and follows the handling steps in that page.
 - Clients SHOULD send a `User-Agent` naming the client and its version, for example `selcom-node/0.1.0`.
 
