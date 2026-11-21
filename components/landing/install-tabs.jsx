@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 /**
  * shadcn/ui tabs around install lines highlighted at build time.
  * Every panel stays in the HTML (forceMount) so search and no-JS readers
- * see all four install lines.
+ * see every install line.
  */
 export function InstallTabs({ items }) {
   return (
