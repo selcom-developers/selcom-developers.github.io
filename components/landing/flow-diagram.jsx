@@ -7,7 +7,7 @@ const steps = [
   { icon: AppWindow, title: 'Your app', text: 'Calls one typed method, for example createOrder.' },
   { icon: Package, title: 'Client', text: 'Checks the fields and keeps them in the order you gave.' },
   { icon: Stamp, title: 'Signed request', text: 'HS256 digest over every field it sends, with a fresh timestamp.' },
-  { icon: Server, title: 'Selcom gateway', text: 'Answers with a result code that becomes one of five statuses.' },
+  { icon: Server, title: 'Selcom gateway', text: 'Answers with a result code that becomes one of the typed statuses.' },
   { icon: Webhook, title: 'Webhook', text: 'Tells your app that a payment changed. A hint, not proof.' },
   { icon: SearchCheck, title: 'Order status', text: 'Confirms the payment and the amount before you fulfil.' }
 ]

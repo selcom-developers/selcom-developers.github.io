@@ -48,7 +48,7 @@ export function Features() {
       <BentoCard
         className="md:col-span-2 lg:col-span-2"
         name="Typed results"
-        description="The result code alone decides one of five statuses. You also get the gateway's code, text, HTTP status and raw body."
+        description="The result code alone decides one of the typed statuses. You also get the gateway's code, text, HTTP status and raw body."
         href="/spec/results"
         cta="See how results are classified"
       >

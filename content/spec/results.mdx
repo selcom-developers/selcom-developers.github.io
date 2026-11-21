@@ -4,7 +4,7 @@ description: Result codes, typed statuses, idempotency and retries.
 
 # Results, statuses and retries
 
-Every client turns a gateway response into one of five typed statuses. Getting this wrong costs real money: reading "in progress" or "unknown" as "failed", then trying again under a new ID, pays the same person twice. This page is the rule; `classify()` in `tools/selcom_reference.py` is the executable version, and `vectors/responses/` holds the cases.
+Every client turns a gateway response into one of the typed statuses. Getting this wrong costs real money: reading "in progress" or "unknown" as "failed", then trying again under a new ID, pays the same person twice. This page is the rule; `classify()` in `tools/selcom_reference.py` is the executable version, and `vectors/responses/` holds the cases.
 
 ## Result codes
 
@@ -34,7 +34,7 @@ The HTTP status does not decide the verdict: business errors come back in the bo
 | `FAILED` | It did not happen | yes | Report the failure. A new attempt is a new transaction with a new ID, and it is the caller's decision, never the client's |
 | `NOT_FOUND` | The gateway has no record of the ID | yes, for that query | The only case in which the same ID may be submitted again |
 
-Every client returns these five names, spelled exactly like this, from every operation.
+Every client returns these names, spelled exactly like this, from every operation.
 
 ## Classification
 
@@ -99,7 +99,7 @@ Every operation returns, at least:
 
 | Field | Content |
 |---|---|
-| `status` | One of the five typed statuses |
+| `status` | One of the typed statuses |
 | `resultcode` | The normalised code, or none when there was no verdict |
 | `result`, `message` | The gateway's text, unchanged |
 | `reference` | The gateway's reference, when present |
